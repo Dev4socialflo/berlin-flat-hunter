@@ -108,6 +108,17 @@
   /* Results */
   .results-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
   .results-head h2 { margin: 0; }
+  .tabs { display: flex; gap: 6px; }
+  .tab {
+    border: 1px solid var(--line); background: transparent; color: var(--muted);
+    padding: 8px 14px; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600;
+    transition: .15s;
+  }
+  .tab:hover { border-color: #3a4150; color: var(--text); }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .compare-hint { text-align: center; color: var(--muted); font-size: 13.5px; margin-top: 12px; }
+  .compare-hint a { color: var(--accent-2); }
+  .compare-hint b { color: var(--text); }
   .count { color: var(--muted); font-size: 13px; }
   .sortbar { display: flex; gap: 8px; align-items: center; margin-left: auto; }
   .sortbar select { width: auto; padding: 6px 8px; }
@@ -257,7 +268,10 @@
     <!-- RESULTS -->
     <section class="card">
       <div class="results-head">
-        <h2>Ranked flats</h2>
+        <div class="tabs">
+          <button class="tab" id="tabLatest">🔎 This flat</button>
+          <button class="tab active" id="tabRanked">🏆 Ranked</button>
+        </div>
         <span class="count" id="count"></span>
         <div class="sortbar">
           <span style="color:var(--muted);font-size:12.5px">Sort</span>
@@ -385,6 +399,15 @@ if (!store.thresholds) store.thresholds = { budgetGood: 1300, budgetMax: 2000, c
 if (!store.settings) store.settings = { workAddress: "Reuchlinstraße 10, 10553 Berlin", orsKey: "", commuteMode: "cycling-regular", marketRadius: 800, hisName: "", herName: "" };
 
 let editingId = null;
+
+// ---- Results view: 'latest' (just the flat he searched) vs 'ranked' (compare all) ----
+let viewMode = localStorage.getItem('bfh_view') || 'ranked';
+let lastAddedId = localStorage.getItem('bfh_last') || null;
+function setView(mode) { viewMode = mode; localStorage.setItem('bfh_view', mode); render(); }
+function focusFlat(id) {
+  lastAddedId = id; localStorage.setItem('bfh_last', id);
+  viewMode = 'latest'; localStorage.setItem('bfh_view', viewMode);
+}
 
 // ---- Capy on his bike, bag packed, looking for a flat ----
 function capySceneSVG({ bubble = true, cls = 'capy-scene', width = 230, height = 185 } = {}) {
@@ -622,15 +645,69 @@ function breakdown(parts) {
   }).join('');
 }
 
+function flatCardHTML(x, opts = {}) {
+  const f = x.f;
+  const col = scoreColor(x.score, x.rejected);
+  const verdict = x.rejected
+    ? `<div class="verdict no">✗ Capy says nope — ${x.rejects.join(' · ')}</div>`
+    : `<div class="verdict ok">✓ Capy approves — fits every dealbreaker</div>`;
+  return `<div class="flat ${x.rejected?'rejected':''}${opts.open?' open':''}" data-id="${f.id}">
+    <div class="score-col">
+      <div class="score-badge" style="background:${col}">${x.rejected?'✗':x.score}</div>
+      ${capyFace(moodFor(x.score, x.rejected))}
+    </div>
+    <div class="flat-main">
+      <div class="flat-title">${opts.rank||''}${escapeHtml(f.title||'Untitled')} ${f.address?`<span class="addr">${escapeHtml(f.address)}</span>`:''}</div>
+      ${verdict}
+      <div class="tags">${opts.pick||''}${flatTags(f)}</div>
+    </div>
+    <div class="flat-actions">
+      <div class="money">${f.warm?f.warm+'€':'—'} <small>warm</small></div>
+      <div>
+        <button class="btn small ghost" data-act="toggle">Why?</button>
+        <button class="btn small ghost" data-act="edit">Edit</button>
+        <button class="btn small ghost" data-act="del">✕</button>
+      </div>
+      ${f.url?`<a class="btn small ghost" href="${escapeAttr(f.url)}" target="_blank" rel="noopener">Listing ↗</a>`:''}
+    </div>
+    <div class="breakdown">${breakdown(x.parts)}</div>
+  </div>`;
+}
+
 function render() {
   const results = document.getElementById('results');
   const sortBy = document.getElementById('sortBy').value;
   const filterBy = document.getElementById('filterBy').value;
 
-  let list = store.flats.map(f => ({ f, ...scoreFlat(f) }));
+  const all = store.flats.map(f => ({ f, ...scoreFlat(f) }));
+  all.forEach(x => x.rejected = x.rejects.length > 0);
+  const fits = all.filter(x => !x.rejected);
 
-  list.forEach(x => x.rejected = x.rejects.length > 0);
+  const total = store.flats.length;
+  document.getElementById('count').textContent = total ? `${fits.length} fit · ${total} total` : '';
 
+  // Tabs: "This flat" only exists when there is a recently added flat.
+  const latest = all.find(x => x.f.id === lastAddedId) || null;
+  if (viewMode === 'latest' && !latest) viewMode = 'ranked';
+  const tabL = document.getElementById('tabLatest'), tabR = document.getElementById('tabRanked');
+  tabL.style.display = latest ? '' : 'none';
+  tabL.classList.toggle('active', viewMode === 'latest');
+  tabR.classList.toggle('active', viewMode === 'ranked');
+  document.querySelector('.sortbar').style.display = viewMode === 'latest' ? 'none' : '';
+
+  // ---- "This flat" spotlight: just the searched flat, breakdown open, rank context ----
+  if (viewMode === 'latest' && latest) {
+    const sortedFits = [...fits].sort((a, b) => b.score - a.score);
+    const pos = sortedFits.findIndex(y => y.f.id === latest.f.id);
+    const hint = latest.rejected
+      ? `Capy rejected this one. <a href="#" data-goranked>See how the others rank →</a>`
+      : `Ranks <b>#${pos + 1} of ${sortedFits.length}</b> fitting flat${sortedFits.length === 1 ? '' : 's'} · <a href="#" data-goranked>compare with the rest →</a>`;
+    results.innerHTML = flatCardHTML(latest, { open: true }) + `<div class="compare-hint">${hint}</div>`;
+    return;
+  }
+
+  // ---- Ranked comparison view ----
+  let list = [...all];
   if (filterBy === 'fit') list = list.filter(x => !x.rejected);
   if (filterBy === 'rejected') list = list.filter(x => x.rejected);
 
@@ -643,47 +720,17 @@ function render() {
     return b.score - a.score;
   });
 
-  const total = store.flats.length;
-  const fits = store.flats.map(scoreFlat).filter(x => x.rejects.length === 0).length;
-  document.getElementById('count').textContent = total ? `${fits} fit · ${total} total` : '';
-
   if (!list.length) {
     results.innerHTML = `<div class="empty">${CAPY_SCENE}
       ${total ? "Capy found no flats matching this filter." : "Capy hasn't found any flats yet — paste a listing above. His bag is packed and the bike is ready."}</div>`;
     return;
   }
 
-  results.innerHTML = list.map((x, i) => {
-    const f = x.f;
-    const col = scoreColor(x.score, x.rejected);
-    const rank = (!x.rejected && sortBy === 'score' && filterBy !== 'rejected') ? `#${i+1} ` : '';
-    const pick = (!x.rejected && sortBy === 'score' && filterBy !== 'rejected' && i === 0)
-      ? tag("🏆 Capy's pick", 'pick') : '';
-    const verdict = x.rejected
-      ? `<div class="verdict no">✗ Capy says nope — ${x.rejects.join(' · ')}</div>`
-      : `<div class="verdict ok">✓ Capy approves — fits every dealbreaker</div>`;
-    return `<div class="flat ${x.rejected?'rejected':''}" data-id="${f.id}">
-      <div class="score-col">
-        <div class="score-badge" style="background:${col}">${x.rejected?'✗':x.score}</div>
-        ${capyFace(moodFor(x.score, x.rejected))}
-      </div>
-      <div class="flat-main">
-        <div class="flat-title">${rank}${escapeHtml(f.title||'Untitled')} ${f.address?`<span class="addr">${escapeHtml(f.address)}</span>`:''}</div>
-        ${verdict}
-        <div class="tags">${pick}${flatTags(f)}</div>
-      </div>
-      <div class="flat-actions">
-        <div class="money">${f.warm?f.warm+'€':'—'} <small>warm</small></div>
-        <div>
-          <button class="btn small ghost" data-act="toggle">Why?</button>
-          <button class="btn small ghost" data-act="edit">Edit</button>
-          <button class="btn small ghost" data-act="del">✕</button>
-        </div>
-        ${f.url?`<a class="btn small ghost" href="${escapeAttr(f.url)}" target="_blank" rel="noopener">Listing ↗</a>`:''}
-      </div>
-      <div class="breakdown">${breakdown(x.parts)}</div>
-    </div>`;
-  }).join('');
+  results.innerHTML = list.map((x, i) => flatCardHTML(x, {
+    rank: (!x.rejected && sortBy === 'score' && filterBy !== 'rejected') ? `#${i+1} ` : '',
+    pick: (!x.rejected && sortBy === 'score' && filterBy !== 'rejected' && i === 0)
+      ? tag("🏆 Capy's pick", 'pick') : '',
+  })).join('');
 }
 
 function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
@@ -742,6 +789,7 @@ form.addEventListener('submit', e => {
     store.flats.unshift(flat);
   }
   pendingSupermarkets = null;
+  focusFlat(flat.id); // spotlight the flat he just added/edited
   save(); render(); form.reset();
   showManualForm(false); // collapse back to the simple view
 });
@@ -771,6 +819,8 @@ function editFlat(id) {
 
 // ---- Results interactions ----
 document.getElementById('results').addEventListener('click', e => {
+  const goRanked = e.target.closest('a[data-goranked]');
+  if (goRanked) { e.preventDefault(); setView('ranked'); return; }
   const btn = e.target.closest('button[data-act]');
   if (!btn) return;
   const card = e.target.closest('.flat');
@@ -779,9 +829,17 @@ document.getElementById('results').addEventListener('click', e => {
   if (act === 'toggle') card.classList.toggle('open');
   if (act === 'edit') editFlat(id);
   if (act === 'del') {
-    if (confirm('Remove this flat?')) { store.flats = store.flats.filter(x => x.id !== id); save(); render(); }
+    if (confirm('Remove this flat?')) {
+      store.flats = store.flats.filter(x => x.id !== id);
+      if (id === lastAddedId) { lastAddedId = null; localStorage.removeItem('bfh_last'); }
+      save(); render();
+    }
   }
 });
+
+// view tabs
+document.getElementById('tabLatest').addEventListener('click', () => setView('latest'));
+document.getElementById('tabRanked').addEventListener('click', () => setView('ranked'));
 
 document.getElementById('sortBy').addEventListener('change', render);
 document.getElementById('filterBy').addEventListener('change', render);
@@ -1057,6 +1115,7 @@ document.getElementById("parseBtn").addEventListener("click", async () => {
   }
 
   store.flats.unshift(flat);
+  focusFlat(flat.id); // show just this flat first; he can flip to Ranked to compare
   save(); render();
   document.getElementById("pasteArea").value = "";
   const sc = scoreFlat(flat);
