@@ -71,7 +71,9 @@
   input:focus, select:focus { outline: none; border-color: var(--accent); }
   .checks { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 4px; }
   label.chk { display: flex; align-items: center; gap: 7px; font-size: 13.5px; color: var(--text); cursor: pointer; }
-  label.chk input { width: 16px; height: 16px; accent-color: var(--accent); }
+  label.chk input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); }
+  .inline-num { width: 48px; flex: 0 0 48px; padding: 3px 4px; margin: 0 4px; background: var(--panel-2); border: 1px solid var(--line); color: var(--text); border-radius: 7px; font-size: 13.5px; text-align: center; }
+  .inline-num:focus { outline: none; border-color: var(--accent); }
   .form-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; align-items: center; }
 
   .paste-box { background: #12151c; border: 1px dashed #3a4150; border-radius: 12px; padding: 14px; margin-bottom: 18px; }
@@ -308,7 +310,8 @@
         <label class="chk"><input type="checkbox" id="db_elevator" checked> ❌ No elevator above 1st floor</label>
         <label class="chk"><input type="checkbox" id="db_topfloor" checked> ❌ Top floor</label>
         <label class="chk"><input type="checkbox" id="db_ring" checked> ❌ Outside the Ring</label>
-        <label class="chk"><input type="checkbox" id="db_rooms" checked> ❌ Fewer than 3 Zimmer (2 bed)</label>
+        <label class="chk" style="white-space:nowrap"><input type="checkbox" id="db_rooms" checked> ❌ Fewer than
+          <input type="number" id="minRooms" min="1" max="6" step="0.5" value="3" class="inline-num"> Zimmer</label>
       </div>
 
       <h3 style="margin:22px 0 8px;font-size:14px;">Importance weights</h3>
@@ -392,7 +395,8 @@ const store = {
   settings: JSON.parse(localStorage.getItem("bfh_settings") || "null"),
 };
 if (!store.weights) { store.weights = {}; CRITERIA.forEach(c => store.weights[c.key] = c.def); }
-if (!store.dealbreakers) store.dealbreakers = { elevator: true, topfloor: true, ring: true, rooms: true };
+if (!store.dealbreakers) store.dealbreakers = { elevator: true, topfloor: true, ring: true, rooms: true, minRooms: 3 };
+if (store.dealbreakers.minRooms == null) store.dealbreakers.minRooms = 3; // migrate older saves
 if (!store.thresholds) store.thresholds = { budgetGood: 1300, budgetMax: 2000, commuteGood: 20, commuteMax: 60 };
 if (!store.settings) store.settings = { workAddress: "Reuchlinstraße 10, 10553 Berlin", orsKey: "", commuteMode: "cycling-regular", marketRadius: 800, hisName: "", herName: "" };
 
@@ -541,8 +545,8 @@ function checkDealbreakers(f) {
     reasons.push("Top floor");
   if (db.ring && f.inRing === false && ("inRing" in f))
     reasons.push("Outside the Ring");
-  if (db.rooms && f.rooms != null && f.rooms < 3)
-    reasons.push("Fewer than 3 Zimmer");
+  if (db.rooms && f.rooms != null && f.rooms < db.minRooms)
+    reasons.push(`Fewer than ${db.minRooms} Zimmer`);
   return reasons;
 }
 
@@ -604,7 +608,7 @@ function tag(text, kind) { return `<span class="tag ${kind||''}">${text}</span>`
 function flatTags(f) {
   const t = [];
   if (f.warm) t.push(tag(`${f.warm}€ warm`, f.warm <= store.thresholds.budgetGood ? 'good' : (f.warm >= store.thresholds.budgetMax ? 'bad':'')));
-  if (f.rooms != null) t.push(tag(`${f.rooms} Zimmer`, f.rooms >= 3 ? 'good' : 'bad'));
+  if (f.rooms != null) t.push(tag(`${f.rooms} Zimmer`, f.rooms >= store.dealbreakers.minRooms ? 'good' : 'bad'));
   if (f.size) t.push(tag(`${f.size} m²`));
   if (f.floor != null) t.push(tag(`Floor ${f.floor}${f.totalFloors?'/'+f.totalFloors:''}`));
   t.push(tag(f.elevator ? 'Lift ✓' : 'No lift', f.elevator ? 'good' : 'warn'));
@@ -856,6 +860,13 @@ Object.entries(dbMap).forEach(([id, key]) => {
   const el = document.getElementById(id);
   el.checked = store.dealbreakers[key];
   el.addEventListener('change', () => { store.dealbreakers[key] = el.checked; save(); render(); });
+});
+// editable minimum room count
+const minRoomsEl = document.getElementById('minRooms');
+minRoomsEl.value = store.dealbreakers.minRooms;
+minRoomsEl.addEventListener('input', () => {
+  const v = parseFloat(minRoomsEl.value);
+  if (!isNaN(v) && v >= 1) { store.dealbreakers.minRooms = v; save(); render(); }
 });
 
 // thresholds
