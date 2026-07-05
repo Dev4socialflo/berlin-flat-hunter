@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capy's Berlin Flat Hunt</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1e222b;
+    --line: #2a2f3a;
+    --text: #e7e9ee;
+    --muted: #9aa2b1;
+    --accent: #ff5a4d;
+    --accent-2: #ffd166;
+    --good: #3ddc84;
+    --bad: #ff5a4d;
+    --warn: #ffb020;
+    --radius: 14px;
+    --shadow: 0 6px 24px rgba(0,0,0,.35);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: radial-gradient(1200px 600px at 80% -10%, #1b2030 0%, var(--bg) 55%) fixed;
+    color: var(--text);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  header.top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+  .logo {
+    width: 44px; height: 44px; border-radius: 12px; flex: 0 0 auto;
+    background: linear-gradient(135deg, var(--accent), #ff8a5a);
+    display: grid; place-items: center; font-size: 24px; box-shadow: var(--shadow);
+  }
+  h1 { font-size: 22px; margin: 0; letter-spacing: .2px; }
+  .sub { color: var(--muted); font-size: 13px; margin: 2px 0 0; }
+  .spacer { flex: 1; }
+
+  .btn {
+    border: 1px solid var(--line); background: var(--panel-2); color: var(--text);
+    padding: 9px 14px; border-radius: 10px; cursor: pointer; font-size: 14px;
+    transition: .15s; white-space: nowrap;
+  }
+  .btn:hover { border-color: #3a4150; background: #232833; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.ghost { background: transparent; }
+  .btn.small { padding: 5px 10px; font-size: 13px; }
+
+  .grid { display: grid; grid-template-columns: 1fr; gap: 18px; margin-top: 22px; }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 18px; box-shadow: var(--shadow);
+  }
+  .card h2 { margin: 0 0 4px; font-size: 16px; }
+  .card .hint { color: var(--muted); font-size: 12.5px; margin: 0 0 14px; }
+
+  /* Form */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+  label.field { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; color: var(--muted); }
+  label.field span b { color: var(--text); font-weight: 600; }
+  input[type=text], input[type=number], select {
+    background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+    padding: 9px 10px; border-radius: 9px; font-size: 14px; width: 100%;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+  .checks { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 4px; }
+  label.chk { display: flex; align-items: center; gap: 7px; font-size: 13.5px; color: var(--text); cursor: pointer; }
+  label.chk input { width: 16px; height: 16px; accent-color: var(--accent); }
+  .form-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; align-items: center; }
+
+  .paste-box { background: #12151c; border: 1px dashed #3a4150; border-radius: 12px; padding: 14px; margin-bottom: 18px; }
+  .paste-head { font-size: 12.5px; color: var(--muted); margin-bottom: 10px; }
+  .paste-head b { color: var(--accent-2); }
+  #pasteArea { width: 100%; min-height: 84px; resize: vertical; background: var(--panel-2); border: 1px solid var(--line); color: var(--text); border-radius: 9px; padding: 10px; font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  #pasteArea:focus { outline: none; border-color: var(--accent); }
+  .parse-msg { font-size: 12.5px; color: var(--muted); }
+  .parse-msg.ok { color: var(--good); }
+  .parse-msg.err { color: var(--bad); }
+  .btn[disabled] { opacity: .55; cursor: progress; }
+
+  /* Capy the capybara 🧡 */
+  .logo svg { width: 34px; height: 34px; display: block; }
+  .capy-scene { margin: 0 auto 10px; display: block; max-width: 100%; }
+  .capy-bob { animation: capy-bob 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  .capy-bag { animation: capy-swing 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
+  @keyframes capy-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+  @keyframes capy-swing { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(3deg); } }
+  @media (prefers-reduced-motion: reduce) { .capy-bob, .capy-bag { animation: none; } }
+  .tag.pick { color: #10131a; background: var(--accent-2); border-color: var(--accent-2); font-weight: 700; }
+
+  /* Capy's mood face under each score */
+  .score-col { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .score-col .mood { display: block; }
+
+  /* Capy cycling across the screen while a lookup runs */
+  #capyRider { position: fixed; left: 0; bottom: 4px; width: 100vw; pointer-events: none; z-index: 60; display: none; }
+  #capyRider .rider { width: 96px; animation: capy-ride 3s linear infinite; will-change: transform; }
+  #capyRider .rider svg { width: 96px; height: auto; display: block; }
+  @keyframes capy-ride { from { transform: translateX(-110px); } to { transform: translateX(100vw); } }
+  @media (prefers-reduced-motion: reduce) { #capyRider .rider { animation: none; margin-left: calc(50vw - 48px); } }
+
+  /* Results */
+  .results-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+  .results-head h2 { margin: 0; }
+  .count { color: var(--muted); font-size: 13px; }
+  .sortbar { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+  .sortbar select { width: auto; padding: 6px 8px; }
+
+  .flat {
+    border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px;
+    background: var(--panel-2); display: grid; grid-template-columns: 64px 1fr auto; gap: 14px; align-items: center;
+  }
+  .flat.rejected { opacity: .62; }
+  .score-badge {
+    width: 64px; height: 64px; border-radius: 12px; display: grid; place-items: center;
+    font-size: 22px; font-weight: 800; color: #10131a;
+  }
+  .flat-main { min-width: 0; }
+  .flat-title { font-size: 15.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .flat-title .addr { color: var(--muted); font-weight: 500; font-size: 13px; }
+  .verdict { font-size: 12.5px; margin-top: 3px; }
+  .verdict.ok { color: var(--good); }
+  .verdict.no { color: var(--bad); }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+  .tag {
+    font-size: 11.5px; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line);
+    color: var(--muted); background: #12151c; white-space: nowrap;
+  }
+  .tag.good { color: var(--good); border-color: #23492f; background: #12211a; }
+  .tag.bad  { color: var(--bad);  border-color: #4a2626; background: #211313; }
+  .tag.warn { color: var(--warn); border-color: #4a3d1f; background: #211c12; }
+  .flat-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+  .money { font-size: 15px; font-weight: 700; }
+  .money small { color: var(--muted); font-weight: 500; font-size: 11.5px; }
+
+  .breakdown { grid-column: 1 / -1; margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 10px; display: none; }
+  .flat.open .breakdown { display: block; }
+  .bd-row { display: grid; grid-template-columns: 150px 1fr 44px; gap: 10px; align-items: center; margin: 5px 0; font-size: 12.5px; }
+  .bar { height: 7px; background: #10131a; border-radius: 999px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+  .bd-label { color: var(--muted); }
+  .bd-val { text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
+
+  .empty { text-align: center; color: var(--muted); padding: 30px 10px; }
+  .empty .big { font-size: 40px; margin-bottom: 8px; }
+
+  /* Weights panel */
+  .weights { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px 20px; }
+  .wt { }
+  .wt label { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--muted); margin-bottom: 3px; }
+  .wt label b { color: var(--text); }
+  .wt input[type=range] { width: 100%; accent-color: var(--accent); }
+  details.adv { margin-top: 14px; }
+  details.adv summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+
+  .foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 26px; }
+  .foot a { color: var(--accent-2); }
+  @media (max-width: 560px) {
+    .flat { grid-template-columns: 52px 1fr; }
+    .flat-actions { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; }
+    .score-badge { width: 52px; height: 52px; font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="logo">
+      <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-label="Capy the capybara">
+        <circle cx="17" cy="15" r="7" fill="#7d5233"/>
+        <circle cx="47" cy="15" r="7" fill="#7d5233"/>
+        <circle cx="17" cy="15" r="3" fill="#5b3a22"/>
+        <circle cx="47" cy="15" r="3" fill="#5b3a22"/>
+        <rect x="8" y="12" width="48" height="44" rx="18" fill="#b08050"/>
+        <rect x="18" y="33" width="28" height="20" rx="10" fill="#c99e6e"/>
+        <circle cx="21" cy="27" r="3.2" fill="#33241a"/>
+        <circle cx="43" cy="27" r="3.2" fill="#33241a"/>
+        <ellipse cx="27.5" cy="41" rx="2.4" ry="3" fill="#4c3320"/>
+        <ellipse cx="36.5" cy="41" rx="2.4" ry="3" fill="#4c3320"/>
+        <path d="M28 48 q4 3 8 0" stroke="#4c3320" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Capy's Berlin Flat Hunt</h1>
+      <p class="sub" id="greeting">Capy the capybara scores every flat against what <em>actually</em> matters — bag packed, bike ready.</p>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn ghost small" id="settingsToggle">⚙ Settings</button>
+  </header>
+
+  <!-- ===================== MAIN VIEW (simple for him) ===================== -->
+  <div class="grid" id="mainView">
+    <!-- ADD A FLAT -->
+    <section class="card">
+      <h2>Add a flat</h2>
+      <p class="hint">Paste the ImmoScout <b>link</b> (or the listing text) and hit the button — it reads everything and scores it below.</p>
+
+      <div class="paste-box">
+        <textarea id="pasteArea" placeholder="Paste the ImmoScout link here…  (or paste the whole listing text if the link won't load)"></textarea>
+        <div class="form-actions" style="margin-top:10px">
+          <button type="button" class="btn primary" id="parseBtn">✨ Add this flat</button>
+          <button type="button" class="btn ghost small" id="clearPaste">Clear</button>
+          <button type="button" class="btn ghost small" id="manualToggle">✏️ Enter by hand</button>
+          <span id="parseMsg" class="parse-msg"></span>
+        </div>
+      </div>
+
+      <!-- Manual form: hidden by default, revealed with "Enter by hand" -->
+      <form id="flatForm" style="display:none; margin-top:16px; border-top:1px solid var(--line); padding-top:16px;">
+        <div class="form-grid">
+          <label class="field"><span><b>Nickname</b> / title</span>
+            <input type="text" name="title" placeholder="e.g. Neukölln balcony flat" required></label>
+          <label class="field"><span>Address / district</span>
+            <input type="text" name="address" placeholder="e.g. Weserstr, Neukölln"></label>
+          <label class="field"><span><b>Warmmiete</b> €/month</span>
+            <input type="number" name="warm" min="0" step="10" placeholder="1450"></label>
+          <label class="field"><span>Kaltmiete €/month</span>
+            <input type="number" name="kalt" min="0" step="10" placeholder="1150"></label>
+          <label class="field"><span>Size (m²)</span>
+            <input type="number" name="size" min="0" step="1" placeholder="72"></label>
+          <label class="field"><span><b>Rooms</b> (Zimmer)</span>
+            <input type="number" name="rooms" min="1" step="0.5" placeholder="3"></label>
+          <label class="field"><span><b>Floor</b> (0 = ground)</span>
+            <input type="number" name="floor" min="0" step="1" placeholder="2"></label>
+          <label class="field"><span>Building total floors</span>
+            <input type="number" name="totalFloors" min="0" step="1" placeholder="5"></label>
+          <label class="field"><span><b>Commute to work</b> (min)</span>
+            <input type="number" name="commute" min="0" step="1" placeholder="25"></label>
+          <label class="field"><span>Nearest supermarket (min walk)</span>
+            <input type="number" name="market" min="0" step="1" placeholder="4"></label>
+          <label class="field"><span>Listing link</span>
+            <input type="text" name="url" placeholder="https://..."></label>
+        </div>
+        <div class="checks">
+          <label class="chk"><input type="checkbox" name="elevator"> Elevator (Aufzug)</label>
+          <label class="chk"><input type="checkbox" name="neubau"> Neubau (new building)</label>
+          <label class="chk"><input type="checkbox" name="inRing"> Within the Ring</label>
+          <label class="chk"><input type="checkbox" name="balcony"> Balcony / Balkon</label>
+          <label class="chk"><input type="checkbox" name="provisionsfrei"> Provisionsfrei</label>
+          <label class="chk"><input type="checkbox" name="unbefristet"> Unbefristet (permanent)</label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn primary" id="submitBtn">Add flat</button>
+          <button type="button" class="btn ghost" id="lookupBtn">📍 Look up commute &amp; supermarket</button>
+          <button type="button" class="btn ghost" id="cancelEdit" style="display:none">Cancel edit</button>
+          <span id="lookupMsg" class="parse-msg"></span>
+        </div>
+      </form>
+    </section>
+
+    <!-- RESULTS -->
+    <section class="card">
+      <div class="results-head">
+        <h2>Ranked flats</h2>
+        <span class="count" id="count"></span>
+        <div class="sortbar">
+          <span style="color:var(--muted);font-size:12.5px">Sort</span>
+          <select id="sortBy">
+            <option value="score">Best score</option>
+            <option value="warm">Cheapest (Warm)</option>
+            <option value="commute">Shortest commute</option>
+            <option value="size">Biggest</option>
+          </select>
+          <select id="filterBy">
+            <option value="all">All</option>
+            <option value="fit">Fits only</option>
+            <option value="rejected">Rejected only</option>
+          </select>
+        </div>
+      </div>
+      <div id="results"></div>
+    </section>
+  </div>
+
+  <!-- ===================== SETTINGS VIEW (hidden by default) ===================== -->
+  <div class="grid" id="settingsView" style="display:none">
+    <section class="card">
+      <div class="results-head" style="margin-bottom:14px">
+        <h2>⚙ Settings</h2>
+        <div class="sortbar">
+          <button class="btn ghost small" id="loadSample">Load example flats</button>
+          <button class="btn ghost small" id="exportBtn">Export</button>
+          <button class="btn ghost small" id="importBtn">Import</button>
+        </div>
+      </div>
+      <p class="hint">Tune what matters to him. Everything here re-scores the flats live — he never has to touch it.</p>
+
+      <h3 style="margin:18px 0 8px;font-size:14px;">Dealbreakers <small style="color:var(--muted);font-weight:400">(auto-reject a flat)</small></h3>
+      <div class="checks" style="margin-bottom:8px">
+        <label class="chk"><input type="checkbox" id="db_elevator" checked> ❌ No elevator above 1st floor</label>
+        <label class="chk"><input type="checkbox" id="db_topfloor" checked> ❌ Top floor</label>
+        <label class="chk"><input type="checkbox" id="db_ring" checked> ❌ Outside the Ring</label>
+        <label class="chk"><input type="checkbox" id="db_rooms" checked> ❌ Fewer than 3 Zimmer (2 bed)</label>
+      </div>
+
+      <h3 style="margin:22px 0 8px;font-size:14px;">Importance weights</h3>
+      <div class="weights" id="weights"></div>
+
+      <details class="adv" open>
+        <summary>Budget & thresholds</summary>
+        <div class="form-grid" style="margin-top:12px">
+          <label class="field"><span>Ideal Warmmiete (full points ≤)</span>
+            <input type="number" id="budgetGood" value="1300" step="50"></label>
+          <label class="field"><span>Max Warmmiete (0 points ≥)</span>
+            <input type="number" id="budgetMax" value="2000" step="50"></label>
+          <label class="field"><span>Great commute (full points ≤ min)</span>
+            <input type="number" id="commuteGood" value="20" step="5"></label>
+          <label class="field"><span>Bad commute (0 points ≥ min)</span>
+            <input type="number" id="commuteMax" value="60" step="5"></label>
+        </div>
+      </details>
+      <details class="adv" open>
+        <summary>📍 Location lookup (commute & supermarket)</summary>
+        <div class="form-grid" style="margin-top:12px">
+          <label class="field" style="grid-column:1/-1"><span><b>His work address</b> (commute is measured to here)</span>
+            <input type="text" id="workAddress" placeholder="Reuchlinstraße 10, 10553 Berlin"></label>
+          <label class="field"><span>Commute mode</span>
+            <select id="commuteMode">
+              <option value="cycling-regular">🚲 Cycling</option>
+              <option value="foot-walking">🚶 Walking</option>
+              <option value="driving-car">🚗 Driving</option>
+            </select></label>
+          <label class="field"><span>Supermarket "nearby" radius (m)</span>
+            <input type="number" id="marketRadius" value="800" step="100"></label>
+          <label class="field" style="grid-column:1/-1"><span>OpenRouteService API key <small>(free at openrouteservice.org — leave blank to use keyless OpenStreetMap)</small></span>
+            <input type="text" id="orsKey" placeholder="Paste ORS key, or leave empty for the free fallback"></label>
+        </div>
+        <p class="hint" style="margin:10px 0 0">When a flat has an address, its commute + nearest supermarket fill in automatically.</p>
+      </details>
+      <details class="adv" open>
+        <summary>💌 Personal touch</summary>
+        <div class="form-grid" style="margin-top:12px">
+          <label class="field"><span>His name (Capy greets him by it)</span>
+            <input type="text" id="hisName" placeholder="e.g. Max"></label>
+          <label class="field"><span>From (your name)</span>
+            <input type="text" id="herName" placeholder="e.g. Vidushi"></label>
+        </div>
+        <p class="hint" style="margin:10px 0 0">The greeting at the top becomes: “Hi [him]! I'm Capy — [you] sent me to help find us a home. 🧡”</p>
+      </details>
+
+      <div class="form-actions" style="margin-top:20px">
+        <button class="btn primary" id="settingsDone">← Done, back to flats</button>
+      </div>
+    </section>
+  </div>
+
+  <p class="foot">Made with ♥ and a capybara in Berlin · saved privately in your browser · <a href="#" id="clearAll">clear everything</a></p>
+</div>
+
+<input type="file" id="importFile" accept="application/json" style="display:none">
+<div id="capyRider"><div class="rider"></div></div>
+
+<script>
+"use strict";
+
+// ---- Scoring criteria definitions ----
+const CRITERIA = [
+  { key: "commute",  label: "Short commute",     def: 30 },
+  { key: "nostairs", label: "No stairs / lift",  def: 22 },
+  { key: "ring",     label: "Within the Ring",   def: 16 },
+  { key: "neubau",   label: "Neubau (new)",      def: 12 },
+  { key: "market",   label: "Supermarket near",  def: 8  },
+  { key: "space",    label: "Space / rooms",     def: 8  },
+  { key: "value",    label: "Rent value",        def: 10 },
+  { key: "balcony",  label: "Balcony",           def: 5  },
+  { key: "nofee",    label: "Provisionsfrei",    def: 5  },
+];
+
+const store = {
+  flats: JSON.parse(localStorage.getItem("bfh_flats") || "[]"),
+  weights: JSON.parse(localStorage.getItem("bfh_weights") || "null"),
+  dealbreakers: JSON.parse(localStorage.getItem("bfh_db") || "null"),
+  thresholds: JSON.parse(localStorage.getItem("bfh_th") || "null"),
+  settings: JSON.parse(localStorage.getItem("bfh_settings") || "null"),
+};
+if (!store.weights) { store.weights = {}; CRITERIA.forEach(c => store.weights[c.key] = c.def); }
+if (!store.dealbreakers) store.dealbreakers = { elevator: true, topfloor: true, ring: true, rooms: true };
+if (!store.thresholds) store.thresholds = { budgetGood: 1300, budgetMax: 2000, commuteGood: 20, commuteMax: 60 };
+if (!store.settings) store.settings = { workAddress: "Reuchlinstraße 10, 10553 Berlin", orsKey: "", commuteMode: "cycling-regular", marketRadius: 800, hisName: "", herName: "" };
+
+let editingId = null;
+
+// ---- Capy on his bike, bag packed, looking for a flat ----
+function capySceneSVG({ bubble = true, cls = 'capy-scene', width = 230, height = 185 } = {}) {
+  return `
+<svg class="${cls}" width="${width}" height="${height}" viewBox="0 0 260 200" xmlns="http://www.w3.org/2000/svg" aria-label="Capy the capybara on a bicycle">
+  <ellipse cx="128" cy="184" rx="105" ry="7" fill="#000" opacity="0.25"/>
+  ${bubble ? `<g>
+    <rect x="176" y="2" width="80" height="26" rx="12" fill="#1e222b" stroke="#2a2f3a"/>
+    <path d="M198 28 l-8 12 18 -12 z" fill="#1e222b"/>
+    <text x="216" y="19" text-anchor="middle" font-size="12" fill="#ffd166" font-family="inherit">3 Zimmer?</text>
+  </g>` : ''}
+  <g stroke="#4a5160" stroke-width="5" fill="none" stroke-linecap="round">
+    <circle cx="62" cy="152" r="30"/>
+    <circle cx="182" cy="152" r="30"/>
+    <line x1="62" y1="152" x2="122" y2="152"/>
+    <line x1="105" y1="102" x2="122" y2="152"/>
+    <line x1="62" y1="152" x2="105" y2="102"/>
+    <line x1="122" y1="152" x2="168" y2="106"/>
+    <line x1="106" y1="104" x2="166" y2="104"/>
+    <line x1="168" y1="104" x2="182" y2="152"/>
+    <line x1="168" y1="104" x2="174" y2="90"/>
+    <line x1="166" y1="90" x2="184" y2="90"/>
+  </g>
+  <circle cx="122" cy="152" r="7" fill="#4a5160"/>
+  <rect x="94" y="94" width="24" height="7" rx="3.5" fill="#3a4150"/>
+  <g class="capy-bob">
+    <rect x="86" y="48" width="92" height="60" rx="27" fill="#b08050"/>
+    <line x1="112" y1="100" x2="120" y2="144" stroke="#a9744f" stroke-width="12" stroke-linecap="round"/>
+    <rect x="110" y="140" width="22" height="7" rx="3.5" fill="#3a4150"/>
+    <line x1="158" y1="80" x2="172" y2="94" stroke="#a9744f" stroke-width="11" stroke-linecap="round"/>
+    <rect x="156" y="28" width="50" height="42" rx="15" fill="#b08050"/>
+    <rect x="186" y="38" width="20" height="28" rx="9" fill="#9a6b42"/>
+    <circle cx="199" cy="48" r="2" fill="#4c3320"/>
+    <circle cx="176" cy="44" r="3.4" fill="#33241a"/>
+    <rect x="162" y="19" width="13" height="12" rx="6" fill="#8a5f3a"/>
+    <line x1="150" y1="52" x2="106" y2="96" stroke="#7d4a33" stroke-width="5"/>
+    <g class="capy-bag">
+      <rect x="92" y="94" width="34" height="26" rx="7" fill="#ffd166" stroke="#d9a53f" stroke-width="2"/>
+      <rect x="92" y="94" width="34" height="12" rx="6" fill="#e9b74f"/>
+      <circle cx="109" cy="106" r="2.5" fill="#8a5f3a"/>
+    </g>
+  </g>
+</svg>`;
+}
+const CAPY_SCENE = capySceneSVG();
+
+// ---- Capy's mood, from how the flat scored ----
+function moodFor(score, rejected) {
+  if (rejected) return 'nope';
+  if (score >= 80) return 'love';
+  if (score >= 60) return 'happy';
+  if (score >= 40) return 'meh';
+  return 'sad';
+}
+// Front-view Capy face with an expression matching the mood.
+function capyFace(mood, size = 36) {
+  let eyes, mouth, extra = '';
+  if (mood === 'love') {
+    eyes = `<path d="M17 27 q4 -5 8 0" stroke="#33241a" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+            <path d="M39 27 q4 -5 8 0" stroke="#33241a" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
+    mouth = `<path d="M26 45.5 q6 6 12 0" stroke="#4c3320" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
+    extra = `<circle cx="13.5" cy="35" r="3.4" fill="#e78a6a" opacity=".5"/><circle cx="50.5" cy="35" r="3.4" fill="#e78a6a" opacity=".5"/>`;
+  } else if (mood === 'happy') {
+    eyes = `<circle cx="21" cy="27" r="3.2" fill="#33241a"/><circle cx="43" cy="27" r="3.2" fill="#33241a"/>`;
+    mouth = `<path d="M28 46.5 q4 3.5 8 0" stroke="#4c3320" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+  } else if (mood === 'meh') {
+    eyes = `<circle cx="21" cy="27" r="3.2" fill="#33241a"/><circle cx="43" cy="27" r="3.2" fill="#33241a"/>
+            <line x1="16" y1="22" x2="26" y2="22" stroke="#8a5f3a" stroke-width="2.6" stroke-linecap="round"/>
+            <line x1="38" y1="22" x2="48" y2="22" stroke="#8a5f3a" stroke-width="2.6" stroke-linecap="round"/>`;
+    mouth = `<line x1="28" y1="47" x2="36" y2="47" stroke="#4c3320" stroke-width="2.2" stroke-linecap="round"/>`;
+  } else if (mood === 'sad') {
+    eyes = `<circle cx="21" cy="27" r="3.2" fill="#33241a"/><circle cx="43" cy="27" r="3.2" fill="#33241a"/>`;
+    mouth = `<path d="M28 48 q4 -3.5 8 0" stroke="#4c3320" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
+  } else { // nope — grumpy brows
+    eyes = `<circle cx="21" cy="28" r="3" fill="#33241a"/><circle cx="43" cy="28" r="3" fill="#33241a"/>
+            <line x1="15" y1="21" x2="26" y2="24.5" stroke="#5b3a22" stroke-width="2.6" stroke-linecap="round"/>
+            <line x1="49" y1="21" x2="38" y2="24.5" stroke="#5b3a22" stroke-width="2.6" stroke-linecap="round"/>`;
+    mouth = `<path d="M28 48.5 q4 -4 8 0" stroke="#4c3320" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+  }
+  return `<svg class="mood" width="${size}" height="${size}" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-label="Capy is feeling ${mood}">
+    <circle cx="17" cy="15" r="7" fill="#7d5233"/>
+    <circle cx="47" cy="15" r="7" fill="#7d5233"/>
+    <circle cx="17" cy="15" r="3" fill="#5b3a22"/>
+    <circle cx="47" cy="15" r="3" fill="#5b3a22"/>
+    <rect x="8" y="12" width="48" height="44" rx="18" fill="#b08050"/>
+    <rect x="18" y="33" width="28" height="20" rx="10" fill="#c99e6e"/>
+    <ellipse cx="27.5" cy="40" rx="2.2" ry="2.8" fill="#4c3320"/>
+    <ellipse cx="36.5" cy="40" rx="2.2" ry="2.8" fill="#4c3320"/>
+    ${eyes}${mouth}${extra}
+  </svg>`;
+}
+
+// ---- View toggling: main (simple) vs settings (advanced) ----
+function showSettings(on) {
+  document.getElementById('mainView').style.display = on ? 'none' : '';
+  document.getElementById('settingsView').style.display = on ? '' : 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function showManualForm(on) {
+  const form = document.getElementById('flatForm');
+  form.style.display = on ? '' : 'none';
+  document.getElementById('manualToggle').textContent = on ? '✕ Hide manual entry' : '✏️ Enter by hand';
+  if (on) form.elements.title.focus();
+}
+// Capy cycles across the bottom of the screen while a lookup is running.
+function setRider(on) { document.getElementById('capyRider').style.display = on ? 'block' : 'none'; }
+
+function save() {
+  localStorage.setItem("bfh_flats", JSON.stringify(store.flats));
+  localStorage.setItem("bfh_weights", JSON.stringify(store.weights));
+  localStorage.setItem("bfh_db", JSON.stringify(store.dealbreakers));
+  localStorage.setItem("bfh_th", JSON.stringify(store.thresholds));
+  localStorage.setItem("bfh_settings", JSON.stringify(store.settings));
+}
+
+// ---- Helpers ----
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+// linear score: full points at "good", 0 at "bad"; handles either direction
+function ramp(val, good, bad) {
+  if (val == null || isNaN(val)) return null; // unknown -> excluded from scoring
+  if (good === bad) return val <= good ? 1 : 0;
+  const t = (val - good) / (bad - good);
+  return clamp(1 - t, 0, 1);
+}
+
+// ---- Dealbreaker evaluation ----
+function checkDealbreakers(f) {
+  const reasons = [];
+  const db = store.dealbreakers;
+  if (db.elevator && !f.elevator && f.floor != null && f.floor >= 2)
+    reasons.push("No elevator above 1st floor");
+  if (db.topfloor && f.floor != null && f.totalFloors != null && f.totalFloors > 0 && f.floor >= f.totalFloors)
+    reasons.push("Top floor");
+  if (db.ring && f.inRing === false && ("inRing" in f))
+    reasons.push("Outside the Ring");
+  if (db.rooms && f.rooms != null && f.rooms < 3)
+    reasons.push("Fewer than 3 Zimmer");
+  return reasons;
+}
+
+// ---- Per-criterion sub-scores (0..1 or null=unknown) ----
+function subScores(f) {
+  const th = store.thresholds;
+  const s = {};
+  s.commute = ramp(f.commute, th.commuteGood, th.commuteMax);
+
+  // no-stairs: elevator OR ground/1st floor is good; higher floor w/o lift is bad
+  if (f.floor == null) s.nostairs = null;
+  else if (f.elevator) s.nostairs = 1;
+  else s.nostairs = clamp(1 - Math.max(0, f.floor - 1) / 4, 0, 1);
+
+  s.ring = ("inRing" in f) ? (f.inRing ? 1 : 0) : null;
+  s.neubau = f.neubau ? 1 : 0;
+  s.market = ramp(f.market, 3, 15);
+  // space: rooms beyond 2 + generous m²
+  if (f.rooms == null && f.size == null) s.space = null;
+  else {
+    const roomScore = f.rooms != null ? clamp((f.rooms - 2) / 2, 0, 1) : 0.5;
+    const sizeScore = f.size != null ? clamp((f.size - 55) / 45, 0, 1) : 0.5;
+    s.space = (roomScore + sizeScore) / 2;
+  }
+  s.value = ramp(f.warm, th.budgetGood, th.budgetMax);
+  s.balcony = f.balcony ? 1 : 0;
+  s.nofee = f.provisionsfrei ? 1 : 0;
+  return s;
+}
+
+// ---- Weighted total (renormalise over criteria we actually know) ----
+function scoreFlat(f) {
+  const rejects = checkDealbreakers(f);
+  const subs = subScores(f);
+  let num = 0, den = 0;
+  const parts = [];
+  CRITERIA.forEach(c => {
+    const w = store.weights[c.key] || 0;
+    const sub = subs[c.key];
+    if (w > 0 && sub != null) { num += w * sub; den += w; parts.push({ ...c, w, sub }); }
+    else if (w > 0) parts.push({ ...c, w, sub: null });
+  });
+  const score = den > 0 ? Math.round((num / den) * 100) : 0;
+  return { score, rejects, parts, subs };
+}
+
+// ---- Rendering ----
+function scoreColor(score, rejected) {
+  if (rejected) return "#5a5f6b";
+  if (score >= 80) return "#3ddc84";
+  if (score >= 65) return "#9ad35a";
+  if (score >= 50) return "#ffd166";
+  if (score >= 35) return "#ffb020";
+  return "#ff7a5a";
+}
+
+function tag(text, kind) { return `<span class="tag ${kind||''}">${text}</span>`; }
+
+function flatTags(f) {
+  const t = [];
+  if (f.warm) t.push(tag(`${f.warm}€ warm`, f.warm <= store.thresholds.budgetGood ? 'good' : (f.warm >= store.thresholds.budgetMax ? 'bad':'')));
+  if (f.rooms != null) t.push(tag(`${f.rooms} Zimmer`, f.rooms >= 3 ? 'good' : 'bad'));
+  if (f.size) t.push(tag(`${f.size} m²`));
+  if (f.floor != null) t.push(tag(`Floor ${f.floor}${f.totalFloors?'/'+f.totalFloors:''}`));
+  t.push(tag(f.elevator ? 'Lift ✓' : 'No lift', f.elevator ? 'good' : 'warn'));
+  if (f.commute != null) t.push(tag(`${f.commute} min work`, f.commute <= store.thresholds.commuteGood ? 'good' : (f.commute >= store.thresholds.commuteMax?'bad':'')));
+  // Named supermarkets nearby. Big chains (Edeka/Lidl/Rewe/Aldi…) shown green first,
+  // then smaller shops in neutral. Falls back to walk-time if we have no list.
+  if (f.supermarkets && f.supermarkets.length) {
+    const shown = [];
+    const seenBrand = new Set();
+    for (const s of f.supermarkets) {
+      if (seenBrand.has(s.brand)) continue;
+      seenBrand.add(s.brand);
+      shown.push(tag(`🛒 ${s.brand} ${s.dist}m`, s.major ? 'good' : ''));
+      if (shown.length >= 4) break;
+    }
+    t.push(...shown);
+  } else if (f.market != null) {
+    t.push(tag(`🛒 ${f.market} min`));
+  }
+  if (f.neubau) t.push(tag('Neubau', 'good'));
+  if ("inRing" in f) t.push(tag(f.inRing ? 'In Ring' : 'Outside Ring', f.inRing ? 'good':'bad'));
+  if (f.balcony) t.push(tag('Balcony', 'good'));
+  if (f.provisionsfrei) t.push(tag('No fee', 'good'));
+  return t.join('');
+}
+
+function breakdown(parts) {
+  return parts.map(p => {
+    const pct = p.sub == null ? 0 : Math.round(p.sub * 100);
+    const val = p.sub == null ? '—' : pct;
+    return `<div class="bd-row">
+      <span class="bd-label">${p.label} <small style="color:#5a5f6b">·${p.w}</small></span>
+      <span class="bar"><i style="width:${pct}%${p.sub==null?';opacity:.25':''}"></i></span>
+      <span class="bd-val">${val}</span>
+    </div>`;
+  }).join('');
+}
+
+function render() {
+  const results = document.getElementById('results');
+  const sortBy = document.getElementById('sortBy').value;
+  const filterBy = document.getElementById('filterBy').value;
+
+  let list = store.flats.map(f => ({ f, ...scoreFlat(f) }));
+
+  list.forEach(x => x.rejected = x.rejects.length > 0);
+
+  if (filterBy === 'fit') list = list.filter(x => !x.rejected);
+  if (filterBy === 'rejected') list = list.filter(x => x.rejected);
+
+  list.sort((a, b) => {
+    if (sortBy === 'warm') return (a.f.warm||1e9) - (b.f.warm||1e9);
+    if (sortBy === 'commute') return (a.f.commute??1e9) - (b.f.commute??1e9);
+    if (sortBy === 'size') return (b.f.size||0) - (a.f.size||0);
+    // score: fits first, then by score
+    if (a.rejected !== b.rejected) return a.rejected ? 1 : -1;
+    return b.score - a.score;
+  });
+
+  const total = store.flats.length;
+  const fits = store.flats.map(scoreFlat).filter(x => x.rejects.length === 0).length;
+  document.getElementById('count').textContent = total ? `${fits} fit · ${total} total` : '';
+
+  if (!list.length) {
+    results.innerHTML = `<div class="empty">${CAPY_SCENE}
+      ${total ? "Capy found no flats matching this filter." : "Capy hasn't found any flats yet — paste a listing above. His bag is packed and the bike is ready."}</div>`;
+    return;
+  }
+
+  results.innerHTML = list.map((x, i) => {
+    const f = x.f;
+    const col = scoreColor(x.score, x.rejected);
+    const rank = (!x.rejected && sortBy === 'score' && filterBy !== 'rejected') ? `#${i+1} ` : '';
+    const pick = (!x.rejected && sortBy === 'score' && filterBy !== 'rejected' && i === 0)
+      ? tag("🏆 Capy's pick", 'pick') : '';
+    const verdict = x.rejected
+      ? `<div class="verdict no">✗ Capy says nope — ${x.rejects.join(' · ')}</div>`
+      : `<div class="verdict ok">✓ Capy approves — fits every dealbreaker</div>`;
+    return `<div class="flat ${x.rejected?'rejected':''}" data-id="${f.id}">
+      <div class="score-col">
+        <div class="score-badge" style="background:${col}">${x.rejected?'✗':x.score}</div>
+        ${capyFace(moodFor(x.score, x.rejected))}
+      </div>
+      <div class="flat-main">
+        <div class="flat-title">${rank}${escapeHtml(f.title||'Untitled')} ${f.address?`<span class="addr">${escapeHtml(f.address)}</span>`:''}</div>
+        ${verdict}
+        <div class="tags">${pick}${flatTags(f)}</div>
+      </div>
+      <div class="flat-actions">
+        <div class="money">${f.warm?f.warm+'€':'—'} <small>warm</small></div>
+        <div>
+          <button class="btn small ghost" data-act="toggle">Why?</button>
+          <button class="btn small ghost" data-act="edit">Edit</button>
+          <button class="btn small ghost" data-act="del">✕</button>
+        </div>
+        ${f.url?`<a class="btn small ghost" href="${escapeAttr(f.url)}" target="_blank" rel="noopener">Listing ↗</a>`:''}
+      </div>
+      <div class="breakdown">${breakdown(x.parts)}</div>
+    </div>`;
+  }).join('');
+}
+
+function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function escapeAttr(s){return String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+
+// ---- Weights UI ----
+function renderWeights() {
+  const el = document.getElementById('weights');
+  el.innerHTML = CRITERIA.map(c => `
+    <div class="wt">
+      <label><span>${c.label}</span><b id="wv_${c.key}">${store.weights[c.key]}</b></label>
+      <input type="range" min="0" max="40" value="${store.weights[c.key]}" data-key="${c.key}">
+    </div>`).join('');
+  el.querySelectorAll('input[type=range]').forEach(r => {
+    r.addEventListener('input', e => {
+      const k = e.target.dataset.key;
+      store.weights[k] = +e.target.value;
+      document.getElementById('wv_'+k).textContent = e.target.value;
+      save(); render();
+    });
+  });
+}
+
+// ---- Form handling ----
+const form = document.getElementById('flatForm');
+form.addEventListener('submit', e => {
+  e.preventDefault();
+  const fd = new FormData(form);
+  const num = k => { const v = fd.get(k); return v === '' || v == null ? null : +v; };
+  const flat = {
+    id: editingId || (Date.now() + '' + Math.floor(performance.now()*1000)%1000),
+    title: fd.get('title')?.trim(),
+    address: fd.get('address')?.trim(),
+    url: fd.get('url')?.trim(),
+    warm: num('warm'), kalt: num('kalt'), size: num('size'), rooms: num('rooms'),
+    floor: num('floor'), totalFloors: num('totalFloors'),
+    commute: num('commute'), market: num('market'),
+    elevator: fd.get('elevator') === 'on',
+    neubau: fd.get('neubau') === 'on',
+    inRing: fd.get('inRing') === 'on',
+    balcony: fd.get('balcony') === 'on',
+    provisionsfrei: fd.get('provisionsfrei') === 'on',
+    unbefristet: fd.get('unbefristet') === 'on',
+  };
+  // Carry over the supermarket list: from a fresh lookup, or preserve when editing.
+  if (pendingSupermarkets) flat.supermarkets = pendingSupermarkets;
+  else if (editingId) {
+    const prev = store.flats.find(x => x.id === editingId);
+    if (prev?.supermarkets) flat.supermarkets = prev.supermarkets;
+  }
+  if (editingId) {
+    const idx = store.flats.findIndex(x => x.id === editingId);
+    store.flats[idx] = flat;
+    exitEdit();
+  } else {
+    store.flats.unshift(flat);
+  }
+  pendingSupermarkets = null;
+  save(); render(); form.reset();
+  showManualForm(false); // collapse back to the simple view
+});
+
+function exitEdit() {
+  editingId = null;
+  document.getElementById('submitBtn').textContent = 'Add flat';
+  document.getElementById('cancelEdit').style.display = 'none';
+}
+document.getElementById('cancelEdit').addEventListener('click', () => { exitEdit(); form.reset(); });
+
+function editFlat(id) {
+  const f = store.flats.find(x => x.id === id);
+  if (!f) return;
+  editingId = id;
+  showManualForm(true); // reveal the manual form so he can edit
+  for (const [k, v] of Object.entries(f)) {
+    const el = form.elements[k];
+    if (!el) continue;
+    if (el.type === 'checkbox') el.checked = !!v;
+    else el.value = v == null ? '' : v;
+  }
+  document.getElementById('submitBtn').textContent = 'Save changes';
+  document.getElementById('cancelEdit').style.display = '';
+  form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// ---- Results interactions ----
+document.getElementById('results').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const card = e.target.closest('.flat');
+  const id = card.dataset.id;
+  const act = btn.dataset.act;
+  if (act === 'toggle') card.classList.toggle('open');
+  if (act === 'edit') editFlat(id);
+  if (act === 'del') {
+    if (confirm('Remove this flat?')) { store.flats = store.flats.filter(x => x.id !== id); save(); render(); }
+  }
+});
+
+document.getElementById('sortBy').addEventListener('change', render);
+document.getElementById('filterBy').addEventListener('change', render);
+
+// view toggles
+document.getElementById('settingsToggle').addEventListener('click', () => showSettings(true));
+document.getElementById('settingsDone').addEventListener('click', () => showSettings(false));
+document.getElementById('manualToggle').addEventListener('click', () => {
+  const hidden = document.getElementById('flatForm').style.display === 'none';
+  showManualForm(hidden);
+});
+
+// dealbreaker checkboxes
+const dbMap = { db_elevator:'elevator', db_topfloor:'topfloor', db_ring:'ring', db_rooms:'rooms' };
+Object.entries(dbMap).forEach(([id, key]) => {
+  const el = document.getElementById(id);
+  el.checked = store.dealbreakers[key];
+  el.addEventListener('change', () => { store.dealbreakers[key] = el.checked; save(); render(); });
+});
+
+// thresholds
+['budgetGood','budgetMax','commuteGood','commuteMax'].forEach(id => {
+  const el = document.getElementById(id);
+  el.value = store.thresholds[id];
+  el.addEventListener('input', () => { store.thresholds[id] = +el.value || 0; save(); render(); });
+});
+
+// ---- Export / import / clear ----
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify({ flats: store.flats, weights: store.weights, dealbreakers: store.dealbreakers, thresholds: store.thresholds }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'berlin-flats.json';
+  a.click();
+});
+document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change', e => {
+  const file = e.target.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      if (d.flats) store.flats = d.flats;
+      if (d.weights) store.weights = d.weights;
+      if (d.dealbreakers) store.dealbreakers = d.dealbreakers;
+      if (d.thresholds) store.thresholds = d.thresholds;
+      save(); location.reload();
+    } catch(err) { alert('Could not read that file.'); }
+  };
+  r.readAsText(file);
+});
+document.getElementById('clearAll').addEventListener('click', e => {
+  e.preventDefault();
+  if (confirm('Delete all flats and reset settings?')) { localStorage.clear(); location.reload(); }
+});
+
+// ---- Sample data ----
+document.getElementById('loadSample').addEventListener('click', () => {
+  const sample = [
+    { title:"Neukölln balcony flat", address:"Weserstraße 40, 12045 Berlin", warm:1520, kalt:1180, size:74, rooms:3, floor:3, totalFloors:5, commute:22, market:3, elevator:true, neubau:false, inRing:true, balcony:true, provisionsfrei:true, unbefristet:true },
+    { title:"Charlottenburg Altbau", address:"Kantstraße 100, 10627 Berlin", warm:1750, kalt:1400, size:88, rooms:3, floor:4, totalFloors:4, commute:35, market:6, elevator:false, neubau:false, inRing:true, balcony:false, provisionsfrei:false, unbefristet:true },
+    { title:"Adlershof Neubau", address:"Rudower Chaussee 25, 12489 Berlin", warm:1400, kalt:1150, size:80, rooms:3, floor:2, totalFloors:6, commute:48, market:5, elevator:true, neubau:true, inRing:false, balcony:true, provisionsfrei:true, unbefristet:true },
+    { title:"Prenzlauer Berg 2Zi", address:"Kollwitzstraße 60, 10405 Berlin", warm:1350, kalt:1050, size:58, rooms:2, floor:1, totalFloors:5, commute:18, market:2, elevator:false, neubau:false, inRing:true, balcony:false, provisionsfrei:false, unbefristet:true },
+    { title:"Friedrichshain lift flat", address:"Boxhagener Straße 50, 10245 Berlin", warm:1600, kalt:1250, size:78, rooms:3, floor:3, totalFloors:6, commute:15, market:4, elevator:true, neubau:false, inRing:true, balcony:true, provisionsfrei:false, unbefristet:true },
+  ].map((f, i) => ({ id: 'sample'+i, ...f }));
+  store.flats = sample.concat(store.flats.filter(f => !String(f.id).startsWith('sample')));
+  save(); render();
+});
+
+// ============================================================
+//  QUICK FILL — paste a link (auto-fetch) or text (parse)
+// ============================================================
+
+// Berlin S-Bahn Ring: rough postal-code list of districts inside the Ring.
+// Used only as a heuristic when the listing doesn't say.
+const RING_PLZ = new Set([
+  "10115","10117","10119","10178","10179","10243","10245","10247","10249", // Mitte / F'hain
+  "10405","10407","10435","10437","10439", // Prenzlauer Berg
+  "10551","10553","10555","10557","10559","10787","10785","10963","10961","10965","10967","10969","10999","10997", // Moabit/Tiergarten/Kreuzberg
+  "10707","10709","10711","10713","10715","10717","10719","10777","10779","10781","10783","10823","10825","10827","10829", // Wilmersdorf/Schöneberg
+  "10623","10625","10627","10629","10585","10587","10589", // Charlottenburg
+  "12045","12047","12049","12043","12053","12055","12059","13353","13355","13357","13359","13347","13349", // Neukölln N / Wedding
+  "10365","10367","10369" // Lichtenberg edge
+]);
+
+// Parse free listing text into a partial flat object.
+function parseListingText(text) {
+  const t = text.replace(/ /g, " ");
+  const low = t.toLowerCase();
+  const out = {};
+  const found = [];
+
+  const money = (re) => {
+    const m = t.match(re);
+    if (!m) return null;
+    // grab the number nearest the label; normalise 1.450,00 / 1450 / 1.450 €
+    const numMatch = m[0].match(/([\d.]+)(?:,\d{2})?\s*€/);
+    if (!numMatch) return null;
+    return Math.round(parseFloat(numMatch[1].replace(/\./g, "").replace(",", ".")));
+  };
+
+  // Warmmiete / Gesamtmiete
+  out.warm = money(/(warm(miete)?|gesamt(miete|kosten)?|bruttowarm)[^\d]{0,30}[\d.]+(?:,\d{2})?\s*€/i);
+  // Kaltmiete / Nettokaltmiete / Grundmiete
+  out.kalt = money(/(kalt(miete)?|nettokalt|grundmiete)[^\d]{0,30}[\d.]+(?:,\d{2})?\s*€/i);
+  if (out.warm) found.push("Warmmiete");
+  if (out.kalt) found.push("Kaltmiete");
+
+  // Size m²
+  let m = t.match(/([\d.]+(?:,\d+)?)\s*(?:m²|m2|qm|quadratmeter)/i);
+  if (m) { out.size = Math.round(parseFloat(m[1].replace(/\./g,"").replace(",","."))); found.push("Größe"); }
+
+  // Rooms (Zimmer)
+  m = t.match(/([\d]+(?:[.,]\d)?)\s*(?:-?\s*)?(?:zimmer|zi\.?|rooms?)\b/i);
+  if (m) { out.rooms = parseFloat(m[1].replace(",",".")); found.push("Zimmer"); }
+
+  // Floor (Etage / Geschoss / OG)
+  m = t.match(/(\d+)\s*\.?\s*(?:etage|obergeschoss|og\b|geschoss|stock)/i);
+  if (m) { out.floor = parseInt(m[1]); found.push("Etage"); }
+  else if (/erdgeschoss|\beg\b|ground\s*floor/i.test(low)) { out.floor = 0; found.push("Etage (EG)"); }
+
+  // Total floors — "... von 5", "5 Etagen", "5-geschossig"
+  m = t.match(/von\s*(\d+)\b/i) || t.match(/(\d+)\s*etagen\b/i) || t.match(/(\d+)\s*[- ]?geschossig/i);
+  if (m) { out.totalFloors = parseInt(m[1]); found.push("Etagenzahl"); }
+
+  // Baujahr → Neubau if >= 2015
+  m = t.match(/baujahr[^\d]{0,10}(\d{4})/i);
+  if (m) { out.baujahr = parseInt(m[1]); if (out.baujahr >= 2015) out.neubau = true; found.push("Baujahr "+out.baujahr); }
+  if (/\bneubau\b/i.test(low)) { out.neubau = true; if(!found.includes("Neubau")) found.push("Neubau"); }
+
+  // Booleans — guard elevator against negation ("kein Aufzug", "ohne Fahrstuhl", "no lift")
+  if (/(aufzug|fahrstuhl|elevator|lift\b)/i.test(low)) {
+    const negated = /(kein|ohne|no|nicht vorhanden|not available)\s*(aufzug|fahrstuhl|elevator|lift)/i.test(low)
+                 || /(aufzug|fahrstuhl|elevator|lift)[^.\n]{0,20}(nicht|kein|ohne)/i.test(low);
+    if (negated) { out.elevator = false; found.push("kein Aufzug"); }
+    else { out.elevator = true; found.push("Aufzug"); }
+  }
+  if (/balkon|balcony|terrasse|loggia/i.test(low)) { out.balcony = true; found.push("Balkon"); }
+  if (/provisionsfrei|keine provision|no commission|courtage.?frei/i.test(low)) { out.provisionsfrei = true; found.push("Provisionsfrei"); }
+  if (/unbefristet/i.test(low)) { out.unbefristet = true; }
+
+  // Address — street ending in straße/weg/allee… (+ optional one preceding word for
+  // compound names like "Rudower Chaussee"), then a house number. Kept on one line so
+  // we don't swallow a district word that sits before it in the sentence.
+  m = t.match(/([A-ZÄÖÜ][a-zäöüß.\-]+ )?([A-Za-zäöüßÄÖÜ.\-]*(?:[Ss]traße|[Ss]tr\.|[Ww]eg|[Aa]llee|[Pp]latz|[Dd]amm|[Cc]haussee|[Uu]fer|[Gg]asse))(\s+\d{1,4}[a-z]?)?/);
+  // If the leading word is a known non-street prefix (e.g. district after "in"), drop it.
+  if (m && m[1] && /^(in|bei|nahe|am|an|die|der|das)$/i.test(m[1].trim())) { m[0] = m[0].replace(m[1], ""); m[1] = ""; }
+  const plz = t.match(/\b(1[0-4]\d{3})\b/);
+  if (m || plz) {
+    let addr = m ? m[0].trim() : "";
+    if (plz) addr += (addr ? ", " : "") + plz[1] + " Berlin";
+    out.address = addr.trim();
+    found.push("Adresse");
+    // Ring heuristic from PLZ
+    if (plz) out.inRing = RING_PLZ.has(plz[1]);
+  }
+
+  return { out, found };
+}
+
+// Fill the form fields from a parsed object (without clobbering with nulls).
+function fillForm(obj) {
+  const set = (name, val) => {
+    const el = form.elements[name]; if (!el || val == null) return;
+    if (el.type === "checkbox") el.checked = !!val; else el.value = val;
+  };
+  set("warm", obj.warm); set("kalt", obj.kalt); set("size", obj.size);
+  set("rooms", obj.rooms); set("floor", obj.floor); set("totalFloors", obj.totalFloors);
+  set("address", obj.address);
+  if (obj.elevator) set("elevator", true);
+  if (obj.neubau) set("neubau", true);
+  if (obj.balcony) set("balcony", true);
+  if (obj.provisionsfrei) set("provisionsfrei", true);
+  if (obj.unbefristet) set("unbefristet", true);
+  if ("inRing" in obj) set("inRing", obj.inRing);
+  if (!form.elements.title.value && obj.address) form.elements.title.value = obj.address.split(",")[0];
+}
+
+const parseMsg = document.getElementById("parseMsg");
+function setMsg(el, text, kind) { el.textContent = text; el.className = "parse-msg" + (kind ? " " + kind : ""); }
+
+// Fetch a URL's text via public CORS proxies (best-effort; ImmoScout may block).
+async function fetchListingText(url) {
+  const proxies = [
+    u => `https://r.jina.ai/${u}`,                       // returns clean readable text
+    u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+    u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  ];
+  for (let i = 0; i < proxies.length; i++) {
+    const make = proxies[i];
+    try {
+      setMsg(parseMsg, `🔍 Capy is reading the listing… (source ${i + 1}/${proxies.length})`, "");
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 6000); // fail fast if a proxy hangs
+      const res = await fetch(make(url), { headers: { "Accept": "text/html,text/plain" }, signal: ctrl.signal }).finally(() => clearTimeout(timer));
+      if (!res.ok) continue;
+      let body = await res.text();
+      // Strip HTML tags to plain-ish text if it looks like markup
+      if (/<\/?[a-z][\s\S]*>/i.test(body)) {
+        body = body.replace(/<script[\s\S]*?<\/script>/gi, " ")
+                   .replace(/<style[\s\S]*?<\/style>/gi, " ")
+                   .replace(/<[^>]+>/g, " ")
+                   .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&");
+      }
+      // Heuristic: did we actually get a listing (not a bot-wall / CAPTCHA page)?
+      // Require several independent listing signals, and reject obvious block pages.
+      if (/captcha|are you human|zugriff verweigert|access denied|einen moment|robot|cloudflare/i.test(body)) continue;
+      const signals = [/\d[\d.]*\s*€/, /\d[\d.,]*\s*(m²|m2|qm)/i, /\d\s*zimmer/i, /kaltmiete|warmmiete/i]
+        .filter(re => re.test(body)).length;
+      if (signals >= 2 && body.length > 400) return body;
+    } catch (e) { /* try next proxy */ }
+  }
+  return null;
+}
+
+document.getElementById("parseBtn").addEventListener("click", async () => {
+  const raw = document.getElementById("pasteArea").value.trim();
+  if (!raw) { setMsg(parseMsg, "Paste a link or the listing text first.", "err"); return; }
+
+  const btn = document.getElementById("parseBtn");
+  const isUrl = /^https?:\/\/\S+$/i.test(raw);
+  let text = raw, viaLink = false;
+
+  if (isUrl) {
+    btn.disabled = true;
+    setMsg(parseMsg, "Reading the listing…", "");
+    const fetched = await fetchListingText(raw);
+    btn.disabled = false;
+    if (fetched) { text = fetched; viaLink = true; }
+    else {
+      setMsg(parseMsg, "Couldn't read that link (ImmoScout often blocks it). Open the listing, press ⌘A then ⌘C, and paste the text here instead.", "err");
+      form.elements.url.value = raw; // at least keep the link
+      return;
+    }
+    form.elements.url.value = raw;
+  }
+
+  const { out, found } = parseListingText(text);
+  // A real listing yields several fields. If a link gave us almost nothing, it was
+  // probably a bot-wall — nudge him to the always-works text paste.
+  if (viaLink && found.length < 2) {
+    setMsg(parseMsg, "That link loaded but didn't look like the full listing (ImmoScout often blocks bots). Open it, press ⌘A then ⌘C, and paste the text here instead.", "err");
+    return;
+  }
+  if (!found.length) {
+    setMsg(parseMsg, "Couldn't find recognisable fields — try pasting the full listing text instead.", "err");
+    return;
+  }
+
+  // Build the flat straight from the parsed data and add it — no form step for him.
+  const flat = {
+    id: Date.now() + '' + Math.floor(performance.now()*1000)%1000,
+    title: out.address ? out.address.split(",")[0] : "Flat",
+    address: out.address || "",
+    url: isUrl ? raw : "",
+    warm: out.warm ?? null, kalt: out.kalt ?? null, size: out.size ?? null,
+    rooms: out.rooms ?? null, floor: out.floor ?? null, totalFloors: out.totalFloors ?? null,
+    commute: null, market: null,
+    elevator: !!out.elevator, neubau: !!out.neubau,
+    balcony: !!out.balcony, provisionsfrei: !!out.provisionsfrei, unbefristet: !!out.unbefristet,
+  };
+  if ("inRing" in out) flat.inRing = out.inRing;
+
+  // Try to auto-fill commute + supermarket from the address (best-effort, non-blocking on failure).
+  let locSummary = "";
+  if (flat.address) {
+    setMsg(parseMsg, "🚴 Capy is pedalling over — checking the commute & sniffing out supermarkets…", "");
+    btn.disabled = true;
+    setRider(true);
+    try { locSummary = await locateFlat(flat) || ""; } catch (e) {}
+    setRider(false);
+    btn.disabled = false;
+  }
+
+  store.flats.unshift(flat);
+  save(); render();
+  document.getElementById("pasteArea").value = "";
+  const sc = scoreFlat(flat);
+  const verdict = sc.rejects.length ? `✗ Capy says nope — ${sc.rejects.join(", ")}` : `✓ Capy approves · ${sc.score}/100`;
+  setMsg(parseMsg, `Added “${flat.title}” — ${verdict}${locSummary ? " · " + locSummary : ""}`, sc.rejects.length ? "" : "ok");
+});
+document.getElementById("clearPaste").addEventListener("click", () => {
+  document.getElementById("pasteArea").value = ""; setMsg(parseMsg, "", "");
+});
+
+// ============================================================
+//  LOCATION LOOKUP — commute + nearest supermarket
+// ============================================================
+const settingEls = {
+  workAddress: document.getElementById("workAddress"),
+  orsKey: document.getElementById("orsKey"),
+  commuteMode: document.getElementById("commuteMode"),
+  marketRadius: document.getElementById("marketRadius"),
+  hisName: document.getElementById("hisName"),
+  herName: document.getElementById("herName"),
+};
+Object.entries(settingEls).forEach(([k, el]) => {
+  el.value = store.settings[k] ?? "";
+  el.addEventListener("input", () => { store.settings[k] = el.type === "number" ? +el.value : el.value; save(); updateGreeting(); });
+});
+
+// Capy's greeting in the header — personalised from Settings → Personal touch.
+function updateGreeting() {
+  const his = (store.settings.hisName || "").trim();
+  const her = (store.settings.herName || "").trim();
+  const hi = his ? `Hi ${escapeHtml(his)}!` : "Hi!";
+  const who = her ? escapeHtml(her) : "someone who loves you";
+  document.getElementById("greeting").innerHTML = `${hi} I'm Capy — ${who} sent me to help find us a home. 🧡`;
+}
+
+const lookupMsg = document.getElementById("lookupMsg");
+
+// Geocode an address → [lon, lat] using ORS if key present, else Nominatim.
+async function geocode(addr) {
+  const key = store.settings.orsKey?.trim();
+  if (key) {
+    const url = `https://api.openrouteservice.org/geocode/search?api_key=${key}&text=${encodeURIComponent(addr)}&boundary.country=DE&size=1`;
+    const r = await fetch(url); const j = await r.json();
+    const c = j.features?.[0]?.geometry?.coordinates;
+    if (c) return c; // [lon, lat]
+  }
+  // keyless fallback
+  const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addr)}`, { headers: { "Accept-Language": "de" } });
+  const j = await r.json();
+  if (j[0]) return [parseFloat(j[0].lon), parseFloat(j[0].lat)];
+  return null;
+}
+
+// Route duration in minutes between two [lon,lat] points.
+async function routeMinutes(from, to, mode) {
+  const key = store.settings.orsKey?.trim();
+  if (key) {
+    const url = `https://api.openrouteservice.org/v2/directions/${mode}?api_key=${key}&start=${from[0]},${from[1]}&end=${to[0]},${to[1]}`;
+    const r = await fetch(url); const j = await r.json();
+    const sec = j.features?.[0]?.properties?.summary?.duration;
+    if (sec != null) return Math.round(sec / 60);
+  }
+  // keyless fallback: OSRM public server (profile is roughly driving/cycling/foot)
+  const prof = mode.includes("foot") ? "foot" : mode.includes("cycl") ? "bike" : "driving";
+  const r = await fetch(`https://router.project-osrm.org/route/v1/${prof}/${from[0]},${from[1]};${to[0]},${to[1]}?overview=false`);
+  const j = await r.json();
+  const sec = j.routes?.[0]?.duration;
+  return sec != null ? Math.round(sec / 60) : null;
+}
+
+// Named supermarkets near a point, via Overpass. Returns a sorted list of
+// { name, brand, dist } (metres), nearest first. Recognises the big chains.
+async function findSupermarkets(lon, lat, radius) {
+  const q = `[out:json][timeout:25];(
+      nwr["shop"~"supermarket|convenience|discount"](around:${radius},${lat},${lon});
+    );out center tags;`;
+  const r = await fetch("https://overpass-api.de/api/interpreter", { method: "POST", body: "data=" + encodeURIComponent(q) });
+  const j = await r.json();
+  if (!j.elements?.length) return [];
+  const out = [];
+  for (const e of j.elements) {
+    const elat = e.lat ?? e.center?.lat, elon = e.lon ?? e.center?.lon;
+    if (elat == null || elon == null) continue;
+    const t = e.tags || {};
+    const raw = t.brand || t.name || t.operator || "Supermarket";
+    const brand = normaliseBrand(raw);
+    out.push({ name: raw, brand, dist: Math.round(haversine(lat, lon, elat, elon)), major: KNOWN_CHAINS.includes(brand) });
+  }
+  // de-dupe same brand near the same spot
+  out.sort((a, b) => a.dist - b.dist);
+  const seen = new Set(), deduped = [];
+  for (const s of out) {
+    const key = s.brand + "|" + Math.round(s.dist / 40);
+    if (seen.has(key)) continue;
+    seen.add(key); deduped.push(s);
+  }
+  // Known chains (Edeka/Lidl/Rewe/Aldi…) first — they're what a weekly shop needs —
+  // then everything else, each group by distance.
+  deduped.sort((a, b) => (b.major - a.major) || (a.dist - b.dist));
+  return deduped;
+}
+
+// Map any raw name to a known chain label (or the cleaned original).
+const KNOWN_CHAINS = ["Edeka","Rewe","Lidl","Aldi","Netto","Kaufland","Penny","Norma","dm","Rossmann","Bio Company","Denns","Alnatura","Real"];
+function normaliseBrand(raw) {
+  const s = raw.toLowerCase();
+  if (s.includes("edeka")) return "Edeka";
+  if (s.includes("rewe")) return "Rewe";
+  if (s.includes("lidl")) return "Lidl";
+  if (s.includes("aldi")) return "Aldi";
+  if (s.includes("netto")) return "Netto";
+  if (s.includes("kaufland")) return "Kaufland";
+  if (s.includes("penny")) return "Penny";
+  if (s.includes("norma")) return "Norma";
+  if (s.includes("rossmann")) return "Rossmann";
+  if (s.includes("bio company")) return "Bio Company";
+  if (s.includes("denn")) return "Denns";
+  if (s.includes("alnatura")) return "Alnatura";
+  if (s === "dm" || s.includes("dm-")) return "dm";
+  return raw.length > 22 ? raw.slice(0, 22) : raw;
+}
+function haversine(la1, lo1, la2, lo2) {
+  const R = 6371000, rad = x => x * Math.PI / 180;
+  const dLa = rad(la2 - la1), dLo = rad(lo2 - lo1);
+  const a = Math.sin(dLa/2)**2 + Math.cos(rad(la1))*Math.cos(rad(la2))*Math.sin(dLo/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+// Fill in commute + supermarket on a flat object from its address. Mutates & returns
+// a short human summary of what it found (or null if the address couldn't be located).
+async function locateFlat(flat) {
+  const addr = (flat.address || "").trim();
+  if (!addr) return null;
+  const flatLoc = await geocode(addr + (/(berlin|\d{5})/i.test(addr) ? "" : ", Berlin"));
+  if (!flatLoc) return null;
+  const bits = [];
+  const radius = store.settings.marketRadius || 800;
+  try {
+    const markets = await findSupermarkets(flatLoc[0], flatLoc[1], radius);
+    if (markets.length) {
+      flat.supermarkets = markets.slice(0, 6); // keep the nearest few for display
+      // score on the nearest proper chain if there is one, else the nearest shop
+      const nearestMajor = markets.find(m => m.major);
+      flat.market = Math.max(1, Math.round((nearestMajor || markets[0]).dist / 80));
+      const majors = markets.filter(m => m.major).slice(0, 4).map(m => `${m.brand} ${m.dist}m`);
+      bits.push(majors.length ? `🛒 ${majors.join(", ")}` : `🛒 ${markets.slice(0,3).map(m=>m.brand).join(", ")} (no big chain within ${radius}m)`);
+    } else {
+      flat.supermarkets = [];
+      bits.push(`🛒 none within ${radius}m`);
+    }
+  } catch (e) {}
+  const work = store.settings.workAddress?.trim();
+  if (work) {
+    try {
+      const workLoc = await geocode(work + (/(berlin|\d{5})/i.test(work) ? "" : ", Berlin"));
+      if (workLoc) {
+        const mins = await routeMinutes(flatLoc, workLoc, store.settings.commuteMode || "cycling-regular");
+        if (mins != null) { flat.commute = mins; bits.push(`🚲 ${mins} min to work`); }
+      }
+    } catch (e) {}
+  }
+  return bits.join(" · ");
+}
+
+// Holds the supermarket list from the most recent manual lookup, merged in on submit.
+let pendingSupermarkets = null;
+
+document.getElementById("lookupBtn").addEventListener("click", async () => {
+  const addr = form.elements.address.value.trim();
+  if (!addr) { setMsg(lookupMsg, "Enter the flat's address first.", "err"); return; }
+  const btn = document.getElementById("lookupBtn");
+  btn.disabled = true;
+  setRider(true);
+  setMsg(lookupMsg, "🚴 Capy is pedalling over…", "");
+  try {
+    const temp = { address: addr };
+    const summary = await locateFlat(temp); // fills temp.commute, temp.market, temp.supermarkets
+    if (summary == null) { setMsg(lookupMsg, "Capy couldn't find that address. Try adding the postcode.", "err"); btn.disabled = false; setRider(false); return; }
+    if (temp.market != null) form.elements.market.value = temp.market;
+    if (temp.commute != null) form.elements.commute.value = temp.commute;
+    pendingSupermarkets = temp.supermarkets || [];
+    const detail = (temp.supermarkets || []).slice(0, 4).map(s => `${s.brand} ${s.dist}m`).join(" · ");
+    setMsg(lookupMsg, (summary || "Located") + (detail ? " — " + detail : ""), "ok");
+  } catch (e) {
+    setMsg(lookupMsg, "Capy got lost (network/rate-limit). Try again in a moment.", "err");
+  }
+  btn.disabled = false;
+  setRider(false);
+});
+
+// ---- Init ----
+document.querySelector('#capyRider .rider').innerHTML = capySceneSVG({ bubble: false, cls: '', width: 96, height: 74 });
+updateGreeting();
+renderWeights();
+render();
+</script>
+</body>
+</html>
