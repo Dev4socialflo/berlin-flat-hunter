@@ -164,13 +164,43 @@
   .empty .big { font-size: 40px; margin-bottom: 8px; }
 
   /* Weights panel */
-  .weights { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px 20px; }
-  .wt { }
-  .wt label { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--muted); margin-bottom: 3px; }
-  .wt label b { color: var(--text); }
-  .wt input[type=range] { width: 100%; accent-color: var(--accent); }
   details.adv { margin-top: 14px; }
   details.adv summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+
+  /* Priority buckets — drag criteria between Essential / Important / Nice-to-have */
+  .buckets { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 6px; }
+  @media (min-width: 720px) { .buckets { grid-template-columns: repeat(3, 1fr); } }
+  .bucket {
+    border: 1.5px dashed var(--line); border-radius: 14px; padding: 12px 12px 14px;
+    background: #12151c; min-height: 120px; transition: .15s;
+  }
+  .bucket.drop { border-color: var(--accent); background: #1a1420; }
+  .bucket-head { display: flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 700; margin-bottom: 4px; }
+  .bucket-sub { font-size: 11.5px; color: var(--muted); margin-bottom: 11px; }
+  .bucket[data-tier="essential"] { border-color: #4a2a2a; }
+  .bucket[data-tier="essential"] .bucket-head { color: #ff8a7a; }
+  .bucket[data-tier="important"] { border-color: #4a4020; }
+  .bucket[data-tier="important"] .bucket-head { color: var(--accent-2); }
+  .bucket[data-tier="nice"] { border-color: #2a3a4a; }
+  .bucket[data-tier="nice"] .bucket-head { color: #7fb2d9; }
+
+  .crit {
+    display: flex; align-items: center; gap: 8px; background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; margin-bottom: 8px;
+    cursor: grab; font-size: 13.5px; user-select: none;
+  }
+  .crit:last-child { margin-bottom: 0; }
+  .crit:hover { border-color: #3a4150; }
+  .crit.dragging { opacity: .4; }
+  .crit .grip { color: #5a5f6b; font-size: 13px; cursor: grab; flex: 0 0 auto; }
+  .crit .clabel { flex: 1; min-width: 0; }
+  .crit .cthresh { display: flex; align-items: center; gap: 3px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .crit .cthresh input { width: 44px; padding: 3px 4px; background: #12151c; border: 1px solid var(--line); color: var(--text); border-radius: 6px; text-align: center; font-size: 12px; }
+  .crit .cthresh input:focus { outline: none; border-color: var(--accent); }
+  .crit .move { display: flex; gap: 2px; }
+  .crit .move button { background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 6px; width: 22px; height: 22px; cursor: pointer; font-size: 11px; padding: 0; line-height: 1; }
+  .crit .move button:hover { color: var(--text); border-color: #3a4150; }
+  .crit .move button:disabled { opacity: .25; cursor: default; }
 
   .foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 26px; }
   .foot a { color: var(--accent-2); }
@@ -305,29 +335,33 @@
         </div>
       </div>
 
-      <h3 style="margin:18px 0 8px;font-size:14px;">Dealbreakers <small style="color:var(--muted);font-weight:400">(auto-reject a flat)</small></h3>
-      <div class="checks" style="margin-bottom:8px">
-        <label class="chk"><input type="checkbox" id="db_elevator" checked> ❌ No elevator above 1st floor</label>
-        <label class="chk"><input type="checkbox" id="db_topfloor" checked> ❌ Top floor</label>
-        <label class="chk"><input type="checkbox" id="db_ring" checked> ❌ Outside the Ring</label>
-        <label class="chk" style="white-space:nowrap"><input type="checkbox" id="db_rooms" checked> ❌ Fewer than
-          <input type="number" id="minRooms" min="1" max="6" step="0.5" value="3" class="inline-num"> Zimmer</label>
+      <h3 style="margin:18px 0 4px;font-size:15px;">What matters to Capy?</h3>
+      <p class="hint" style="margin:0 0 14px">Drag each thing into a bucket — or use the arrows. <b style="color:#ff8a7a">Essential</b> = a flat is rejected if it fails it. <b style="color:var(--accent-2)">Important</b> weighs heavily in the score. <b style="color:#7fb2d9">Nice to have</b> is a small bonus.</p>
+      <div class="buckets" id="buckets">
+        <div class="bucket" data-tier="essential">
+          <div class="bucket-head">❤️ Essential</div>
+          <div class="bucket-sub">Hard no — rejects the flat</div>
+          <div class="bucket-list" data-tier="essential"></div>
+        </div>
+        <div class="bucket" data-tier="important">
+          <div class="bucket-head">⭐ Important</div>
+          <div class="bucket-sub">Weighs heavily in the score</div>
+          <div class="bucket-list" data-tier="important"></div>
+        </div>
+        <div class="bucket" data-tier="nice">
+          <div class="bucket-head">👍 Nice to have</div>
+          <div class="bucket-sub">A small bonus if present</div>
+          <div class="bucket-list" data-tier="nice"></div>
+        </div>
       </div>
 
-      <h3 style="margin:22px 0 8px;font-size:14px;">Importance weights</h3>
-      <div class="weights" id="weights"></div>
-
-      <details class="adv" open>
-        <summary>Budget & thresholds</summary>
+      <details class="adv" open style="margin-top:18px">
+        <summary>💶 Price range (for "Good price")</summary>
         <div class="form-grid" style="margin-top:12px">
-          <label class="field"><span>Ideal Warmmiete (full points ≤)</span>
+          <label class="field"><span>Great price — full points at or below (€ warm)</span>
             <input type="number" id="budgetGood" value="1300" step="50"></label>
-          <label class="field"><span>Max Warmmiete (0 points ≥)</span>
+          <label class="field"><span>Too expensive — zero points at or above (€ warm)</span>
             <input type="number" id="budgetMax" value="2000" step="50"></label>
-          <label class="field"><span>Great commute (full points ≤ min)</span>
-            <input type="number" id="commuteGood" value="20" step="5"></label>
-          <label class="field"><span>Bad commute (0 points ≥ min)</span>
-            <input type="number" id="commuteMax" value="60" step="5"></label>
         </div>
       </details>
       <details class="adv" open>
@@ -375,29 +409,40 @@
 "use strict";
 
 // ---- Scoring criteria definitions ----
+// tier: default bucket ('essential' | 'important' | 'nice')
+// canReject: whether this criterion can act as a hard-no when Essential
+// thresh: optional inline number control {key, label, suffix, min, max, step, def}
 const CRITERIA = [
-  { key: "commute",  label: "Short commute",     def: 30 },
-  { key: "nostairs", label: "No stairs / lift",  def: 22 },
-  { key: "ring",     label: "Within the Ring",   def: 16 },
-  { key: "neubau",   label: "Neubau (new)",      def: 12 },
-  { key: "market",   label: "Supermarket near",  def: 8  },
-  { key: "space",    label: "Space / rooms",     def: 8  },
-  { key: "value",    label: "Rent value",        def: 10 },
-  { key: "balcony",  label: "Balcony",           def: 5  },
-  { key: "nofee",    label: "Provisionsfrei",    def: 5  },
+  { key: "commute",  label: "Short commute",    tier: "essential", canReject: true,
+    thresh: { field: "commuteMax", label: "reject if over", suffix: "min", min: 5, max: 120, step: 5, def: 45 } },
+  { key: "nostairs", label: "Elevator / few stairs", tier: "essential", canReject: true,
+    thresh: { field: "elevFloor", label: "need lift above floor", suffix: "", min: 0, max: 6, step: 1, def: 1 } },
+  { key: "ring",     label: "Inside the Ring",  tier: "important", canReject: true },
+  { key: "neubau",   label: "New building",     tier: "important", canReject: false },
+  { key: "value",    label: "Good price",       tier: "important", canReject: false },
+  { key: "space",    label: "Enough rooms / space", tier: "important", canReject: true,
+    thresh: { field: "minRooms", label: "min Zimmer", suffix: "", min: 1, max: 6, step: 0.5, def: 3 } },
+  { key: "market",   label: "Supermarket nearby", tier: "nice", canReject: false },
+  { key: "balcony",  label: "Balcony",          tier: "nice", canReject: false },
+  { key: "nofee",    label: "Provisionsfrei (no fee)", tier: "nice", canReject: false },
 ];
+const CRIT_BY_KEY = Object.fromEntries(CRITERIA.map(c => [c.key, c]));
+// Weight each tier contributes to the score.
+const TIER_WEIGHT = { essential: 30, important: 15, nice: 5 };
 
 const store = {
   flats: JSON.parse(localStorage.getItem("bfh_flats") || "[]"),
-  weights: JSON.parse(localStorage.getItem("bfh_weights") || "null"),
-  dealbreakers: JSON.parse(localStorage.getItem("bfh_db") || "null"),
+  tiers: JSON.parse(localStorage.getItem("bfh_tiers") || "null"),
   thresholds: JSON.parse(localStorage.getItem("bfh_th") || "null"),
   settings: JSON.parse(localStorage.getItem("bfh_settings") || "null"),
 };
-if (!store.weights) { store.weights = {}; CRITERIA.forEach(c => store.weights[c.key] = c.def); }
-if (!store.dealbreakers) store.dealbreakers = { elevator: true, topfloor: true, ring: true, rooms: true, minRooms: 3 };
-if (store.dealbreakers.minRooms == null) store.dealbreakers.minRooms = 3; // migrate older saves
-if (!store.thresholds) store.thresholds = { budgetGood: 1300, budgetMax: 2000, commuteGood: 20, commuteMax: 60 };
+// Tier assignment per criterion (which bucket it sits in).
+if (!store.tiers) { store.tiers = {}; CRITERIA.forEach(c => store.tiers[c.key] = c.tier); }
+CRITERIA.forEach(c => { if (!store.tiers[c.key]) store.tiers[c.key] = c.tier; }); // migrate new criteria
+// Numeric thresholds (inline controls + budget ramp).
+if (!store.thresholds) store.thresholds = {};
+const TH_DEFAULTS = { budgetGood: 1300, budgetMax: 2000, commuteMax: 45, elevFloor: 1, minRooms: 3 };
+for (const [k, v] of Object.entries(TH_DEFAULTS)) if (store.thresholds[k] == null) store.thresholds[k] = v;
 if (!store.settings) store.settings = { workAddress: "Reuchlinstraße 10, 10553 Berlin", orsKey: "", commuteMode: "cycling-regular", marketRadius: 800, hisName: "Hari", herName: "Vidushi" };
 
 let editingId = null;
@@ -519,8 +564,7 @@ function setRider(on) { document.getElementById('capyRider').style.display = on 
 
 function save() {
   localStorage.setItem("bfh_flats", JSON.stringify(store.flats));
-  localStorage.setItem("bfh_weights", JSON.stringify(store.weights));
-  localStorage.setItem("bfh_db", JSON.stringify(store.dealbreakers));
+  localStorage.setItem("bfh_tiers", JSON.stringify(store.tiers));
   localStorage.setItem("bfh_th", JSON.stringify(store.thresholds));
   localStorage.setItem("bfh_settings", JSON.stringify(store.settings));
 }
@@ -535,28 +579,13 @@ function ramp(val, good, bad) {
   return clamp(1 - t, 0, 1);
 }
 
-// ---- Dealbreaker evaluation ----
-function checkDealbreakers(f) {
-  const reasons = [];
-  const db = store.dealbreakers;
-  if (db.elevator && !f.elevator && f.floor != null && f.floor >= 2)
-    reasons.push("No elevator above 1st floor");
-  if (db.topfloor && f.floor != null && f.totalFloors != null && f.totalFloors > 0 && f.floor >= f.totalFloors)
-    reasons.push("Top floor");
-  if (db.ring && f.inRing === false && ("inRing" in f))
-    reasons.push("Outside the Ring");
-  if (db.rooms && f.rooms != null && f.rooms < db.minRooms)
-    reasons.push(`Fewer than ${db.minRooms} Zimmer`);
-  return reasons;
-}
-
-// ---- Per-criterion sub-scores (0..1 or null=unknown) ----
+// ---- Per-criterion sub-scores (0..1, or null=unknown) ----
 function subScores(f) {
   const th = store.thresholds;
   const s = {};
-  s.commute = ramp(f.commute, th.commuteGood, th.commuteMax);
+  s.commute = ramp(f.commute, Math.max(1, th.commuteMax * 0.4), th.commuteMax);
 
-  // no-stairs: elevator OR ground/1st floor is good; higher floor w/o lift is bad
+  // no-stairs: elevator is perfect; without a lift, the higher the floor the worse
   if (f.floor == null) s.nostairs = null;
   else if (f.elevator) s.nostairs = 1;
   else s.nostairs = clamp(1 - Math.max(0, f.floor - 1) / 4, 0, 1);
@@ -564,10 +593,10 @@ function subScores(f) {
   s.ring = ("inRing" in f) ? (f.inRing ? 1 : 0) : null;
   s.neubau = f.neubau ? 1 : 0;
   s.market = ramp(f.market, 3, 15);
-  // space: rooms beyond 2 + generous m²
   if (f.rooms == null && f.size == null) s.space = null;
   else {
-    const roomScore = f.rooms != null ? clamp((f.rooms - 2) / 2, 0, 1) : 0.5;
+    const base = th.minRooms;
+    const roomScore = f.rooms != null ? clamp((f.rooms - (base - 1)) / 2, 0, 1) : 0.5;
     const sizeScore = f.size != null ? clamp((f.size - 55) / 45, 0, 1) : 0.5;
     s.space = (roomScore + sizeScore) / 2;
   }
@@ -577,18 +606,38 @@ function subScores(f) {
   return s;
 }
 
-// ---- Weighted total (renormalise over criteria we actually know) ----
+// A criterion is a hard-no only when it's Essential, can reject, and the flat
+// clearly and knowably fails it (unknown data never rejects).
+function rejectReason(c, f) {
+  const th = store.thresholds;
+  switch (c.key) {
+    case "commute": return (f.commute != null && f.commute > th.commuteMax) ? `Commute over ${th.commuteMax} min` : null;
+    case "nostairs": return (!f.elevator && f.floor != null && f.floor > th.elevFloor) ? `No lift above floor ${th.elevFloor}` : null;
+    case "ring": return (("inRing" in f) && f.inRing === false) ? "Outside the Ring" : null;
+    case "space": return (f.rooms != null && f.rooms < th.minRooms) ? `Fewer than ${th.minRooms} Zimmer` : null;
+    default: return null;
+  }
+}
+
+// ---- Weighted total + dealbreaker reasons in one pass ----
 function scoreFlat(f) {
-  const rejects = checkDealbreakers(f);
   const subs = subScores(f);
+  const rejects = [];
   let num = 0, den = 0;
   const parts = [];
   CRITERIA.forEach(c => {
-    const w = store.weights[c.key] || 0;
+    const tier = store.tiers[c.key] || c.tier;
+    if (tier === 'essential' && c.canReject) {
+      const r = rejectReason(c, f);
+      if (r) rejects.push(r);
+    }
+    const w = TIER_WEIGHT[tier] || 0;
     const sub = subs[c.key];
-    if (w > 0 && sub != null) { num += w * sub; den += w; parts.push({ ...c, w, sub }); }
-    else if (w > 0) parts.push({ ...c, w, sub: null });
+    if (w > 0 && sub != null) { num += w * sub; den += w; parts.push({ ...c, tier, w, sub }); }
+    else if (w > 0) parts.push({ ...c, tier, w, sub: null });
   });
+  // sort breakdown by tier weight (essential first) so the "Why?" reads top-down
+  parts.sort((a, b) => b.w - a.w);
   const score = den > 0 ? Math.round((num / den) * 100) : 0;
   return { score, rejects, parts, subs };
 }
@@ -608,11 +657,11 @@ function tag(text, kind) { return `<span class="tag ${kind||''}">${text}</span>`
 function flatTags(f) {
   const t = [];
   if (f.warm) t.push(tag(`${f.warm}€ warm`, f.warm <= store.thresholds.budgetGood ? 'good' : (f.warm >= store.thresholds.budgetMax ? 'bad':'')));
-  if (f.rooms != null) t.push(tag(`${f.rooms} Zimmer`, f.rooms >= store.dealbreakers.minRooms ? 'good' : 'bad'));
+  if (f.rooms != null) t.push(tag(`${f.rooms} Zimmer`, f.rooms >= store.thresholds.minRooms ? 'good' : 'bad'));
   if (f.size) t.push(tag(`${f.size} m²`));
   if (f.floor != null) t.push(tag(`Floor ${f.floor}${f.totalFloors?'/'+f.totalFloors:''}`));
   t.push(tag(f.elevator ? 'Lift ✓' : 'No lift', f.elevator ? 'good' : 'warn'));
-  if (f.commute != null) t.push(tag(`${f.commute} min work`, f.commute <= store.thresholds.commuteGood ? 'good' : (f.commute >= store.thresholds.commuteMax?'bad':'')));
+  if (f.commute != null) t.push(tag(`${f.commute} min work`, f.commute <= store.thresholds.commuteMax*0.4 ? 'good' : (f.commute > store.thresholds.commuteMax?'bad':'')));
   // Named supermarkets nearby. Big chains (Edeka/Lidl/Rewe/Aldi…) shown green first,
   // then smaller shops in neutral. Falls back to walk-time if we have no list.
   if (f.supermarkets && f.supermarkets.length) {
@@ -739,19 +788,80 @@ function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&
 function escapeAttr(s){return String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 
 // ---- Weights UI ----
-function renderWeights() {
-  const el = document.getElementById('weights');
-  el.innerHTML = CRITERIA.map(c => `
-    <div class="wt">
-      <label><span>${c.label}</span><b id="wv_${c.key}">${store.weights[c.key]}</b></label>
-      <input type="range" min="0" max="40" value="${store.weights[c.key]}" data-key="${c.key}">
-    </div>`).join('');
-  el.querySelectorAll('input[type=range]').forEach(r => {
-    r.addEventListener('input', e => {
-      const k = e.target.dataset.key;
-      store.weights[k] = +e.target.value;
-      document.getElementById('wv_'+k).textContent = e.target.value;
-      save(); render();
+const TIER_ORDER = ['essential', 'important', 'nice'];
+
+// Build one draggable criterion card (with an inline threshold control if it has one).
+function critCardHTML(c) {
+  const tier = store.tiers[c.key] || c.tier;
+  const idx = TIER_ORDER.indexOf(tier);
+  let thresh = '';
+  if (c.thresh) {
+    const val = store.thresholds[c.thresh.field];
+    thresh = `<span class="cthresh">${c.thresh.label}
+      <input type="number" data-thresh="${c.thresh.field}" min="${c.thresh.min}" max="${c.thresh.max}" step="${c.thresh.step}" value="${val}">${c.thresh.suffix}</span>`;
+  }
+  return `<div class="crit" draggable="true" data-key="${c.key}">
+    <span class="grip">⠿</span>
+    <span class="clabel">${c.label}</span>
+    ${thresh}
+    <span class="move">
+      <button data-move="up" data-key="${c.key}" ${idx===0?'disabled':''} title="More important">▲</button>
+      <button data-move="down" data-key="${c.key}" ${idx===2?'disabled':''} title="Less important">▼</button>
+    </span>
+  </div>`;
+}
+
+function renderBuckets() {
+  TIER_ORDER.forEach(tier => {
+    const list = document.querySelector(`.bucket-list[data-tier="${tier}"]`);
+    const items = CRITERIA.filter(c => (store.tiers[c.key] || c.tier) === tier);
+    list.innerHTML = items.length ? items.map(critCardHTML).join('')
+      : `<div style="color:#5a5f6b;font-size:12.5px;text-align:center;padding:8px 0">— drop here —</div>`;
+  });
+  wireCritControls();
+}
+
+function setTier(key, tier) {
+  store.tiers[key] = tier;
+  save(); renderBuckets(); render();
+}
+
+function wireCritControls() {
+  // threshold inputs
+  document.querySelectorAll('.crit input[data-thresh]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const v = parseFloat(inp.value);
+      if (!isNaN(v)) { store.thresholds[inp.dataset.thresh] = v; save(); render(); }
+    });
+    inp.addEventListener('mousedown', e => e.stopPropagation()); // don't start a drag
+    inp.closest('.crit').setAttribute('draggable', 'true');
+  });
+  // up/down arrows (keyboard-free reordering between tiers)
+  document.querySelectorAll('.crit button[data-move]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.key;
+      const cur = TIER_ORDER.indexOf(store.tiers[key] || CRIT_BY_KEY[key].tier);
+      const next = cur + (btn.dataset.move === 'up' ? -1 : 1);
+      if (next >= 0 && next < TIER_ORDER.length) setTier(key, TIER_ORDER[next]);
+    });
+  });
+  // drag & drop
+  document.querySelectorAll('.crit').forEach(card => {
+    card.addEventListener('dragstart', e => {
+      card.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', card.dataset.key);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', () => card.classList.remove('dragging'));
+  });
+  document.querySelectorAll('.bucket').forEach(b => {
+    const tier = b.dataset.tier;
+    b.addEventListener('dragover', e => { e.preventDefault(); b.classList.add('drop'); });
+    b.addEventListener('dragleave', () => b.classList.remove('drop'));
+    b.addEventListener('drop', e => {
+      e.preventDefault(); b.classList.remove('drop');
+      const key = e.dataTransfer.getData('text/plain');
+      if (key) setTier(key, tier);
     });
   });
 }
@@ -854,23 +964,8 @@ document.getElementById('manualToggle').addEventListener('click', () => {
   showManualForm(hidden);
 });
 
-// dealbreaker checkboxes
-const dbMap = { db_elevator:'elevator', db_topfloor:'topfloor', db_ring:'ring', db_rooms:'rooms' };
-Object.entries(dbMap).forEach(([id, key]) => {
-  const el = document.getElementById(id);
-  el.checked = store.dealbreakers[key];
-  el.addEventListener('change', () => { store.dealbreakers[key] = el.checked; save(); render(); });
-});
-// editable minimum room count
-const minRoomsEl = document.getElementById('minRooms');
-minRoomsEl.value = store.dealbreakers.minRooms;
-minRoomsEl.addEventListener('input', () => {
-  const v = parseFloat(minRoomsEl.value);
-  if (!isNaN(v) && v >= 1) { store.dealbreakers.minRooms = v; save(); render(); }
-});
-
-// thresholds
-['budgetGood','budgetMax','commuteGood','commuteMax'].forEach(id => {
+// budget thresholds (good-price ramp for the "Good price" criterion)
+['budgetGood','budgetMax'].forEach(id => {
   const el = document.getElementById(id);
   el.value = store.thresholds[id];
   el.addEventListener('input', () => { store.thresholds[id] = +el.value || 0; save(); render(); });
@@ -878,7 +973,7 @@ minRoomsEl.addEventListener('input', () => {
 
 // ---- Export / import / clear ----
 document.getElementById('exportBtn').addEventListener('click', () => {
-  const blob = new Blob([JSON.stringify({ flats: store.flats, weights: store.weights, dealbreakers: store.dealbreakers, thresholds: store.thresholds }, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ flats: store.flats, tiers: store.tiers, thresholds: store.thresholds, settings: store.settings }, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'berlin-flats.json';
@@ -892,9 +987,9 @@ document.getElementById('importFile').addEventListener('change', e => {
     try {
       const d = JSON.parse(r.result);
       if (d.flats) store.flats = d.flats;
-      if (d.weights) store.weights = d.weights;
-      if (d.dealbreakers) store.dealbreakers = d.dealbreakers;
+      if (d.tiers) store.tiers = d.tiers;
       if (d.thresholds) store.thresholds = d.thresholds;
+      if (d.settings) store.settings = d.settings;
       save(); location.reload();
     } catch(err) { alert('Could not read that file.'); }
   };
@@ -1317,7 +1412,7 @@ document.getElementById("lookupBtn").addEventListener("click", async () => {
 // ---- Init ----
 document.querySelector('#capyRider .rider').innerHTML = capySceneSVG({ bubble: false, cls: '', width: 96, height: 74 });
 updateGreeting();
-renderWeights();
+renderBuckets();
 render();
 </script>
 </body>
