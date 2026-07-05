@@ -356,7 +356,7 @@
           <label class="field"><span>From (your name)</span>
             <input type="text" id="herName" placeholder="e.g. Vidushi"></label>
         </div>
-        <p class="hint" style="margin:10px 0 0">The greeting at the top becomes: “Hi [him]! I'm Capy — [you] sent me to help find us a home. 🧡”</p>
+        <p class="hint" style="margin:10px 0 0">The greeting at the top becomes: “Happy birthday, [him]! 🎂 I'm Capy — [you] sent me to help find us a home. 🧡”</p>
       </details>
 
       <div class="form-actions" style="margin-top:20px">
@@ -398,7 +398,7 @@ if (!store.weights) { store.weights = {}; CRITERIA.forEach(c => store.weights[c.
 if (!store.dealbreakers) store.dealbreakers = { elevator: true, topfloor: true, ring: true, rooms: true, minRooms: 3 };
 if (store.dealbreakers.minRooms == null) store.dealbreakers.minRooms = 3; // migrate older saves
 if (!store.thresholds) store.thresholds = { budgetGood: 1300, budgetMax: 2000, commuteGood: 20, commuteMax: 60 };
-if (!store.settings) store.settings = { workAddress: "Reuchlinstraße 10, 10553 Berlin", orsKey: "", commuteMode: "cycling-regular", marketRadius: 800, hisName: "", herName: "" };
+if (!store.settings) store.settings = { workAddress: "Reuchlinstraße 10, 10553 Berlin", orsKey: "", commuteMode: "cycling-regular", marketRadius: 800, hisName: "Hari", herName: "Vidushi" };
 
 let editingId = null;
 
@@ -1151,13 +1151,12 @@ Object.entries(settingEls).forEach(([k, el]) => {
   el.addEventListener("input", () => { store.settings[k] = el.type === "number" ? +el.value : el.value; save(); updateGreeting(); });
 });
 
-// Capy's greeting in the header — personalised from Settings → Personal touch.
+// Capy's greeting in the header — personalised (defaults baked in as a gift).
 function updateGreeting() {
-  const his = (store.settings.hisName || "").trim();
-  const her = (store.settings.herName || "").trim();
-  const hi = his ? `Hi ${escapeHtml(his)}!` : "Hi!";
-  const who = her ? escapeHtml(her) : "someone who loves you";
-  document.getElementById("greeting").innerHTML = `${hi} I'm Capy — ${who} sent me to help find us a home. 🧡`;
+  const his = (store.settings.hisName || "").trim() || "Hari";
+  const her = (store.settings.herName || "").trim() || "Vidushi";
+  document.getElementById("greeting").innerHTML =
+    `Happy birthday, ${escapeHtml(his)}! 🎂🎉 I'm Capy — ${escapeHtml(her)} sent me to help find us a home. 🧡`;
 }
 
 const lookupMsg = document.getElementById("lookupMsg");
