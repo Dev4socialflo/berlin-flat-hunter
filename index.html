@@ -194,8 +194,10 @@
   .crit.dragging { opacity: .4; }
   .crit .grip { color: #5a5f6b; font-size: 13px; cursor: grab; flex: 0 0 auto; }
   .crit .clabel { flex: 1; min-width: 0; }
-  .crit .cthresh { display: flex; align-items: center; gap: 3px; font-size: 12px; color: var(--muted); white-space: nowrap; }
-  .crit .cthresh input { width: 44px; padding: 3px 4px; background: #12151c; border: 1px solid var(--line); color: var(--text); border-radius: 6px; text-align: center; font-size: 12px; }
+  .crit .cthreshs { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+  .crit .cthresh { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .crit .cthresh input { width: 60px; flex: 0 0 60px; padding: 3px 6px; background: #12151c; border: 1px solid var(--line); color: var(--text); border-radius: 6px; text-align: center; font-size: 12px; -moz-appearance: textfield; }
+  .crit .cthresh input::-webkit-outer-spin-button, .crit .cthresh input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .crit .cthresh input:focus { outline: none; border-color: var(--accent); }
   .crit .move { display: flex; gap: 2px; }
   .crit .move button { background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 6px; width: 22px; height: 22px; cursor: pointer; font-size: 11px; padding: 0; line-height: 1; }
@@ -356,15 +358,6 @@
       </div>
 
       <details class="adv" open style="margin-top:18px">
-        <summary>💶 Price range (for "Good price")</summary>
-        <div class="form-grid" style="margin-top:12px">
-          <label class="field"><span>Great price — full points at or below (€ warm)</span>
-            <input type="number" id="budgetGood" value="1300" step="50"></label>
-          <label class="field"><span>Too expensive — zero points at or above (€ warm)</span>
-            <input type="number" id="budgetMax" value="2000" step="50"></label>
-        </div>
-      </details>
-      <details class="adv" open>
         <summary>📍 Location lookup (commute & supermarket)</summary>
         <div class="form-grid" style="margin-top:12px">
           <label class="field" style="grid-column:1/-1"><span><b>His work address</b> (commute is measured to here)</span>
@@ -375,8 +368,6 @@
               <option value="foot-walking">🚶 Walking</option>
               <option value="driving-car">🚗 Driving</option>
             </select></label>
-          <label class="field"><span>Supermarket "nearby" radius (m)</span>
-            <input type="number" id="marketRadius" value="800" step="100"></label>
           <label class="field" style="grid-column:1/-1"><span>OpenRouteService API key <small>(free at openrouteservice.org — leave blank to use keyless OpenStreetMap)</small></span>
             <input type="text" id="orsKey" placeholder="Paste ORS key, or leave empty for the free fallback"></label>
         </div>
@@ -411,18 +402,23 @@
 // ---- Scoring criteria definitions ----
 // tier: default bucket ('essential' | 'important' | 'nice')
 // canReject: whether this criterion can act as a hard-no when Essential
-// thresh: optional inline number control {key, label, suffix, min, max, step, def}
+// threshs: optional inline number controls [{field, label, suffix, min, max, step, def}]
 const CRITERIA = [
   { key: "commute",  label: "Short commute",    tier: "essential", canReject: true,
-    thresh: { field: "commuteMax", label: "reject if over", suffix: "min", min: 5, max: 120, step: 5, def: 45 } },
+    threshs: [{ field: "commuteMax", label: "ideal under", suffix: "min", min: 5, max: 120, step: 5, def: 45 }] },
   { key: "nostairs", label: "Elevator / few stairs", tier: "essential", canReject: true,
-    thresh: { field: "elevFloor", label: "need lift above floor", suffix: "", min: 0, max: 6, step: 1, def: 1 } },
+    threshs: [{ field: "elevFloor", label: "need lift above floor", suffix: "", min: 0, max: 6, step: 1, def: 1 }] },
+  { key: "value",    label: "Good price",       tier: "important", canReject: false,
+    threshs: [
+      { field: "budgetGood", label: "great ≤", suffix: "€", min: 300, max: 4000, step: 50, def: 1300 },
+      { field: "budgetMax",  label: "too much ≥", suffix: "€", min: 300, max: 5000, step: 50, def: 2000 },
+    ] },
   { key: "ring",     label: "Inside the Ring",  tier: "important", canReject: true },
   { key: "neubau",   label: "New building",     tier: "important", canReject: false },
-  { key: "value",    label: "Good price",       tier: "important", canReject: false },
   { key: "space",    label: "Enough rooms / space", tier: "important", canReject: true,
-    thresh: { field: "minRooms", label: "min Zimmer", suffix: "", min: 1, max: 6, step: 0.5, def: 3 } },
-  { key: "market",   label: "Supermarket nearby", tier: "nice", canReject: false },
+    threshs: [{ field: "minRooms", label: "min Zimmer", suffix: "", min: 1, max: 6, step: 0.5, def: 3 }] },
+  { key: "market",   label: "Supermarket nearby", tier: "nice", canReject: false,
+    threshs: [{ field: "marketRadius", label: "within", suffix: "m", min: 200, max: 3000, step: 100, def: 800 }] },
   { key: "balcony",  label: "Balcony",          tier: "nice", canReject: false },
   { key: "nofee",    label: "Provisionsfrei (no fee)", tier: "nice", canReject: false },
 ];
@@ -441,7 +437,10 @@ if (!store.tiers) { store.tiers = {}; CRITERIA.forEach(c => store.tiers[c.key] =
 CRITERIA.forEach(c => { if (!store.tiers[c.key]) store.tiers[c.key] = c.tier; }); // migrate new criteria
 // Numeric thresholds (inline controls + budget ramp).
 if (!store.thresholds) store.thresholds = {};
-const TH_DEFAULTS = { budgetGood: 1300, budgetMax: 2000, commuteMax: 45, elevFloor: 1, minRooms: 3 };
+const TH_DEFAULTS = { budgetGood: 1300, budgetMax: 2000, commuteMax: 45, elevFloor: 1, minRooms: 3, marketRadius: 800 };
+// migrate marketRadius from the old settings location if present
+if (store.settings && store.settings.marketRadius != null && store.thresholds.marketRadius == null)
+  store.thresholds.marketRadius = store.settings.marketRadius;
 for (const [k, v] of Object.entries(TH_DEFAULTS)) if (store.thresholds[k] == null) store.thresholds[k] = v;
 if (!store.settings) store.settings = { workAddress: "Reuchlinstraße 10, 10553 Berlin", orsKey: "", commuteMode: "cycling-regular", marketRadius: 800, hisName: "Hari", herName: "Vidushi" };
 
@@ -790,20 +789,19 @@ function escapeAttr(s){return String(s).replace(/"/g,'&quot;').replace(/</g,'&lt
 // ---- Weights UI ----
 const TIER_ORDER = ['essential', 'important', 'nice'];
 
-// Build one draggable criterion card (with an inline threshold control if it has one).
+// Build one draggable criterion card (with any inline threshold controls it has).
 function critCardHTML(c) {
   const tier = store.tiers[c.key] || c.tier;
   const idx = TIER_ORDER.indexOf(tier);
-  let thresh = '';
-  if (c.thresh) {
-    const val = store.thresholds[c.thresh.field];
-    thresh = `<span class="cthresh">${c.thresh.label}
-      <input type="number" data-thresh="${c.thresh.field}" min="${c.thresh.min}" max="${c.thresh.max}" step="${c.thresh.step}" value="${val}">${c.thresh.suffix}</span>`;
-  }
+  const thresh = (c.threshs || []).map(th => {
+    const val = store.thresholds[th.field];
+    return `<span class="cthresh">${th.label}
+      <input type="number" data-thresh="${th.field}" min="${th.min}" max="${th.max}" step="${th.step}" value="${val}">${th.suffix}</span>`;
+  }).join('');
   return `<div class="crit" draggable="true" data-key="${c.key}">
     <span class="grip">⠿</span>
     <span class="clabel">${c.label}</span>
-    ${thresh}
+    <span class="cthreshs">${thresh}</span>
     <span class="move">
       <button data-move="up" data-key="${c.key}" ${idx===0?'disabled':''} title="More important">▲</button>
       <button data-move="down" data-key="${c.key}" ${idx===2?'disabled':''} title="Less important">▼</button>
@@ -964,12 +962,6 @@ document.getElementById('manualToggle').addEventListener('click', () => {
   showManualForm(hidden);
 });
 
-// budget thresholds (good-price ramp for the "Good price" criterion)
-['budgetGood','budgetMax'].forEach(id => {
-  const el = document.getElementById(id);
-  el.value = store.thresholds[id];
-  el.addEventListener('input', () => { store.thresholds[id] = +el.value || 0; save(); render(); });
-});
 
 // ---- Export / import / clear ----
 document.getElementById('exportBtn').addEventListener('click', () => {
@@ -1237,7 +1229,6 @@ const settingEls = {
   workAddress: document.getElementById("workAddress"),
   orsKey: document.getElementById("orsKey"),
   commuteMode: document.getElementById("commuteMode"),
-  marketRadius: document.getElementById("marketRadius"),
   hisName: document.getElementById("hisName"),
   herName: document.getElementById("herName"),
 };
@@ -1355,7 +1346,7 @@ async function locateFlat(flat) {
   const flatLoc = await geocode(addr + (/(berlin|\d{5})/i.test(addr) ? "" : ", Berlin"));
   if (!flatLoc) return null;
   const bits = [];
-  const radius = store.settings.marketRadius || 800;
+  const radius = store.thresholds.marketRadius || 800;
   try {
     const markets = await findSupermarkets(flatLoc[0], flatLoc[1], radius);
     if (markets.length) {
